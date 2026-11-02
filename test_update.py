@@ -273,6 +273,22 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(json.loads(state_file.read_text()), old)
         self.assertEqual((self.repo / "bin/codex-statusline").resolve(), old_package / "bin/codex")
 
+    def test_interrupted_legacy_archive_recovers_before_switch(self):
+        old_package, _ = self.package("old")
+        new_package, _ = self.package("new")
+        old = {"current": str(old_package)}
+        new = {"current": str(new_package)}
+        launcher = self.repo / "bin/codex-statusline"
+        launcher.parent.mkdir()
+        launcher.write_bytes((old_package / "bin/codex").read_bytes())
+        update.write_json(self.args.state / "pending-switch.json", {
+            "old_actual": str(launcher), "old_restore": str(old_package / "bin/codex"),
+            "new_target": str(new_package / "bin/codex"), "old_state": old, "new_state": new,
+        })
+        update.recover_switch(self.args)
+        self.assertEqual(launcher.resolve(), old_package / "bin/codex")
+        self.assertEqual(json.loads((self.args.state / "installation.json").read_text()), old)
+
     def test_changed_commit_cannot_reuse_receipt(self):
         self.release()
         self.stage()

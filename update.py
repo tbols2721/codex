@@ -106,6 +106,8 @@ def recover_switch(args):
         state = pending["new_state"]
     elif selected in (pending["old_actual"], pending["old_restore"]):
         state = pending["old_state"]
+        if pending["old_restore"] and selected != pending["old_restore"]:
+            point_link(launcher, pending["old_restore"])
     else:
         raise Stop("An interrupted switch and the trial launcher disagree. Review pending-switch.json first.")
     write_json(args.state / "installation.json", state)
