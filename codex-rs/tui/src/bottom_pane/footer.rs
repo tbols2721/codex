@@ -48,7 +48,9 @@ use super::shortcut_overlay;
 use crate::key_hint;
 use crate::key_hint::KeyBinding;
 use crate::key_hint::ShortcutHint;
+use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
 use crate::render::line_utils::prefix_lines;
+use crate::render::line_utils::split_line_at_newlines;
 use crate::status::format_tokens_compact;
 use crate::style::secondary_text_style;
 use crate::ui_consts::FOOTER_INDENT_COLS;
@@ -265,6 +267,70 @@ pub(crate) fn footer_height(props: &FooterProps, width: u16) -> u16 {
         show_queue_hint,
     )
     .len() as u16
+}
+
+/// Explicit status rows shared by measurement and painting.
+///
+/// Each configured line break starts a new row. Resizing truncates each row independently, so
+/// fields never move to another row. The right indicator stays on the first row.
+pub(crate) struct ExplicitStatusLine {
+    pub(crate) lines: Vec<Line<'static>>,
+    pub(crate) right: Option<Line<'static>>,
+}
+
+impl ExplicitStatusLine {
+    pub(crate) fn new(width: u16, line: Line<'static>, right: Option<Line<'static>>) -> Self {
+        let available = width.saturating_sub(FOOTER_INDENT_COLS as u16);
+        let right_width = right.as_ref().map_or(0, |right| right.width() as u16);
+        let reserved = max_left_width_for_right(Rect::new(0, 0, width, 1), right_width);
+        Self {
+            lines: split_line_at_newlines(line)
+                .into_iter()
+                .enumerate()
+                .map(|(index, line)| {
+                    let width = if index == 0 {
+                        reserved.unwrap_or(available)
+                    } else {
+                        available
+                    };
+                    truncate_line_with_ellipsis_if_overflow(line, usize::from(width))
+                })
+                .collect(),
+            right,
+        }
+    }
+
+    pub(crate) fn height(&self) -> u16 {
+        self.lines.len().try_into().unwrap_or(u16::MAX).max(1)
+    }
+
+    pub(crate) fn limit_row_width(&mut self, row: usize, width: u16) {
+        if let Some(line) = self.lines.get_mut(row) {
+            *line = truncate_line_with_ellipsis_if_overflow(
+                std::mem::take(line),
+                usize::from(width.saturating_sub(FOOTER_INDENT_COLS as u16)),
+            );
+        }
+    }
+
+    pub(crate) fn render(self, area: Rect, buf: &mut Buffer) {
+        Paragraph::new(prefix_lines(
+            self.lines,
+            " ".repeat(FOOTER_INDENT_COLS).into(),
+            " ".repeat(FOOTER_INDENT_COLS).into(),
+        ))
+        .render(area, buf);
+        if let Some(right) = self.right {
+            render_context_right(
+                Rect {
+                    height: area.height.min(1),
+                    ..area
+                },
+                buf,
+                &right,
+            );
+        }
+    }
 }
 
 /// Render a single precomputed footer line.

@@ -36,6 +36,7 @@ enum StatusLineAccent {
 impl StatusLineAccent {
     fn for_item(item: StatusLineItem) -> Self {
         match item {
+            StatusLineItem::LineBreak => Self::Metadata,
             StatusLineItem::ModelName
             | StatusLineItem::ModelWithReasoning
             | StatusLineItem::Provider
@@ -118,10 +119,18 @@ where
     F: Fn(StatusLineAccent) -> Option<Style>,
 {
     let mut spans = Vec::new();
+    let mut row_has_items = false;
     for (item, text) in segments {
-        if !spans.is_empty() {
+        if item == StatusLineItem::LineBreak {
+            spans.push(Span::raw("\n"));
+            row_has_items = false;
+            continue;
+        }
+        let text = text.replace(['\r', '\n'], " ");
+        if row_has_items {
             spans.push(STATUS_LINE_SEPARATOR.set_style(secondary_text_style()));
         }
+        row_has_items = true;
         let style = if use_theme_colors
             && matches!(
                 item,
@@ -220,11 +229,54 @@ mod tests {
     use pretty_assertions::assert_eq;
     use ratatui::style::Modifier;
 
+    #[test]
+    fn status_line_breaks_do_not_add_separators_or_collapse_empty_rows() {
+        let line = status_line_from_segments(
+            [
+                (StatusLineItem::ModelName, "MODEL".to_string()),
+                (StatusLineItem::LineBreak, "\n".to_string()),
+                (StatusLineItem::LineBreak, "\n".to_string()),
+                (StatusLineItem::CurrentDir, "DIR".to_string()),
+                (StatusLineItem::UsedTokens, "TOKENS".to_string()),
+            ],
+            false,
+            None,
+        )
+        .unwrap();
+        assert_eq!(line_text(&line), "MODEL\n\nDIR · TOKENS");
+    }
+
     fn line_text(line: &Line<'static>) -> String {
         line.spans
             .iter()
             .map(|span| span.content.as_ref())
             .collect::<String>()
+    }
+
+    #[test]
+    fn status_line_field_newlines_do_not_create_unassigned_rows() {
+        for use_theme_colors in [false, true] {
+            let line = status_line_from_segments_with_resolver(
+                [
+                    (StatusLineItem::ModelName, "MODEL\r\nDETAIL".to_string()),
+                    (
+                        StatusLineItem::ThreadTitle,
+                        "FIRST\nSECOND\rTHIRD".to_string(),
+                    ),
+                    (StatusLineItem::LineBreak, "\n".to_string()),
+                    (StatusLineItem::UsedTokens, "TOKENS".to_string()),
+                ],
+                use_theme_colors,
+                None,
+                |_| None,
+            )
+            .expect("status line");
+            let rows = crate::render::line_utils::split_line_at_newlines(line);
+            assert_eq!(
+                rows.iter().map(line_text).collect::<Vec<_>>(),
+                vec!["MODEL  DETAIL · FIRST SECOND THIRD", "TOKENS"]
+            );
+        }
     }
 
     #[test]

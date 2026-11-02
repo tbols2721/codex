@@ -11,9 +11,11 @@
 //! Only the two base composer modes opt into fresh-thread decoration; queries and help do not.
 //! Shortcut help occupies the space above the composer and keeps its close hint on the final row.
 //! Passive transcript hints retain the shortcuts entry when it fits beside the complete hint.
+//! Explicit status rows use the same layout for height measurement and painting.
 
 use std::time::Instant;
 
+use super::super::footer::ExplicitStatusLine;
 use super::super::footer::footer_height;
 use super::super::footer::reset_mode_after_activity;
 use super::super::footer::shows_passive_footer_line;
@@ -276,7 +278,10 @@ impl super::ChatComposer {
     }
 
     pub(super) fn footer_hint_height(&self, width: u16, options: ComposerRenderOptions<'_>) -> u16 {
-        if self.show_warning_notice(options) || self.shortcuts_above_composer(options) {
+        if self.shortcuts_above_composer(options)
+            || (self.show_warning_notice(options)
+                && self.explicit_status_footer(width, options).is_none())
+        {
             return 1;
         }
         options
@@ -284,11 +289,54 @@ impl super::ChatComposer {
             .map_or_else(
                 || {
                     self.custom_footer_height()
+                        .or_else(|| {
+                            self.explicit_status_footer(width, options)
+                                .map(|layout| layout.height())
+                        })
                         .unwrap_or_else(|| footer_height(&self.hint_footer_props(options), width))
                 },
                 |footer| footer.text.height().try_into().unwrap_or(u16::MAX),
             )
             .max(u16::from(options.separate_status_line))
+    }
+
+    pub(super) fn explicit_status_footer(
+        &self,
+        width: u16,
+        options: ComposerRenderOptions<'_>,
+    ) -> Option<ExplicitStatusLine> {
+        use super::super::footer::can_show_left_with_context;
+        use super::super::footer::passive_footer_status_line;
+        use super::super::footer::side_conversation_context_line;
+        use super::super::footer::uses_passive_footer_status_layout;
+
+        let props = self.hint_footer_props(options);
+        if self.custom_footer_height().is_some() || !uses_passive_footer_status_layout(&props) {
+            return None;
+        }
+        let line = passive_footer_status_line(&props).unwrap_or_default();
+        let rows = crate::render::line_utils::split_line_at_newlines(line.clone());
+        if rows.len() < 2 {
+            return None;
+        }
+        let right = if let Some(label) = &self.footer.side_conversation_context_label {
+            Some(side_conversation_context_line(label))
+        } else if let Some(line) = self.shell_mode_footer_line() {
+            Some(line)
+        } else {
+            let full = self.mode_indicator_line(!props.is_task_running);
+            let right_width = full.as_ref().map_or(0, |line| line.width() as u16);
+            if can_show_left_with_context(
+                Rect::new(0, 0, width, 1),
+                rows[0].width() as u16,
+                right_width,
+            ) {
+                full
+            } else {
+                self.mode_indicator_line(/*show_cycle_hint*/ false)
+            }
+        };
+        Some(ExplicitStatusLine::new(width, line, right))
     }
 
     pub(super) fn render_transcript_footer(

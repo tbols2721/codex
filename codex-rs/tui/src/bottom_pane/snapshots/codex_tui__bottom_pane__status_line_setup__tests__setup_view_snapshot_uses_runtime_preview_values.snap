@@ -4,7 +4,8 @@ expression: "render_lines(&view, 72)"
 ---
                                                                         
   Configure Status Line                                                 
-  Select which items to display in the status line.                     
+  Choose fields and rows. Move Start next line between fields.          
+  Alt+Enter adds a line.                                                
                                                                         
   Type to search                                                        
                                                                         
@@ -13,9 +14,9 @@ expression: "render_lines(&view, 72)"
   [x] model                 Current model name                          
   [x] current-dir           Current working directory                   
   [x] git-branch            Current Git branch (omitted when unavailabl…
+  [ ] Start next line       Start the next line; move fields before or …
   [ ] model-with-reasoning  Current model name with reasoning level     
   [ ] reasoning             Current reasoning level                     
-  [ ] project-name          Project name (omitted when unavailable)     
 ↓                                                                       
   gpt-5-codex · ~/codex-rs · jif/statusline-preview                     
   space toggle · ←/→ reorder · enter save · esc cancel

@@ -16,6 +16,9 @@
 //! loss cancels the pending paste; a late clipboard result cannot overwrite newer input.
 //! The live voice strip renders after effort ignition, followed by the Astra sparkle when eligible.
 //! Owned transcripts keep persistent status below the composer and hints on a separate final row.
+//! Configured `line-break` items assign status fields to explicit rows in both terminal modes.
+//! Resizing truncates each row independently without moving fields. Measurement and painting share
+//! the row layout, with mode indicators on the first row; transient hints keep their priority.
 //! Shortcut help expands above the composer, with its close hint replacing the final shortcuts row
 //! so input and persistent status stay anchored when help opens or closes.
 //! Escape dismisses visible shortcut help before editing, transcript backtracking, or interruption.
@@ -337,6 +340,7 @@ use super::effort_status_line::EFFORT_STATUS_LINE_FRAME_TICK;
 use super::effort_status_line::EffortStatusLineTransition;
 use super::file_search_popup::FileSearchPopup;
 use super::footer::CollaborationModeIndicator;
+use super::footer::ExplicitStatusLine;
 use super::footer::FooterMode;
 use super::footer::FooterProps;
 use super::footer::GoalStatusIndicator;
@@ -4660,7 +4664,7 @@ impl ChatComposer {
             }
             None => {
                 let footer_props = self.hint_footer_props(options);
-                let show_cycle_hint = self.status_surface_height(options) == 0
+                let show_cycle_hint = !self.status_surface_enabled(options)
                     && !footer_props.is_task_running
                     && self.footer.collaboration_mode_indicator.is_some();
                 let show_shortcuts_hint = match footer_props.mode {
@@ -4690,10 +4694,36 @@ impl ChatComposer {
                 } else {
                     footer_rect
                 };
+                let explicit_status_rect = if footer_rect.height > 1 {
+                    footer_rect
+                } else {
+                    hint_rect
+                };
                 if let Some(input) = self.draft.textarea.vim_query() {
                     input.render(inset_footer_hint_area(hint_rect), buf);
                 } else if let Some(line) = self.history_search_footer_line() {
                     render_footer_line(hint_rect, buf, line);
+                } else if let Some(mut layout) =
+                    self.explicit_status_footer(explicit_status_rect.width, options)
+                {
+                    if warning_area.is_some() {
+                        layout.limit_row_width(
+                            usize::from(explicit_status_rect.height.saturating_sub(1)),
+                            hint_rect.width,
+                        );
+                    }
+                    layout.render(explicit_status_rect, buf);
+                    if let Some(url) = self.footer.status_line_hyperlink_url.as_deref() {
+                        mark_underlined_hyperlink(buf, explicit_status_rect, url);
+                    }
+                    if self
+                        .effort_status_line_transition
+                        .as_ref()
+                        .is_some_and(|transition| !transition.is_finished())
+                        && let Some(frame_requester) = &self.frame_requester
+                    {
+                        frame_requester.schedule_frame_in(EFFORT_STATUS_LINE_FRAME_TICK);
+                    }
                 } else {
                     let available_width =
                         hint_rect.width.saturating_sub(FOOTER_INDENT_COLS as u16) as usize;
@@ -4730,7 +4760,7 @@ impl ChatComposer {
                         None
                     };
                     let left_mode_indicator =
-                        if status_line_active || self.status_surface_height(options) > 0 {
+                        if status_line_active || self.status_surface_enabled(options) {
                             None
                         } else {
                             self.footer.collaboration_mode_indicator
@@ -4763,7 +4793,7 @@ impl ChatComposer {
                             Some(side_conversation_context_line(label))
                         } else if let Some(line) = self.shell_mode_footer_line() {
                             Some(line)
-                        } else if self.status_surface_height(options) > 0 || transition_active {
+                        } else if self.status_surface_enabled(options) || transition_active {
                             None
                         } else if status_line_active {
                             let full = self.mode_indicator_line(show_cycle_hint);

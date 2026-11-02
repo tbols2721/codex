@@ -855,6 +855,7 @@ pub struct Config {
     /// - `never`: Never use alternate screen (inline mode, preserves scrollback).
     pub tui_alternate_screen: AltScreenMode,
     /// Ordered list of status line item identifiers for the TUI.
+    /// Insert `line-break` between groups to assign fields to explicit rows.
     ///
     /// When unset, the TUI defaults to: `model-with-reasoning` and `current-dir`.
     pub tui_status_line: Option<Vec<String>>,
