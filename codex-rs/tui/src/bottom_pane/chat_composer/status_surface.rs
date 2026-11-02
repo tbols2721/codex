@@ -1,17 +1,29 @@
 //! Separate persistent transcript context from the composer's transient hint row.
 //! Measurement, rendering, and cursor placement share the same reserved status rectangle.
 //! Shortcut help grows above the input, preserving status and close rows below it even when clipped.
+//! Persistent status retains the rows assigned by configured `line-break` items at every width.
 
 use super::*;
 
 impl ChatComposer {
-    pub(super) fn status_surface_height(&self, options: ComposerRenderOptions<'_>) -> u16 {
-        u16::from(options.separate_status_line && self.footer.status_line_enabled)
+    pub(super) fn status_surface_enabled(&self, options: ComposerRenderOptions<'_>) -> bool {
+        options.separate_status_line && self.footer.status_line_enabled
+    }
+
+    pub(super) fn status_surface_height(
+        &self,
+        width: u16,
+        options: ComposerRenderOptions<'_>,
+    ) -> u16 {
+        if !self.status_surface_enabled(options) {
+            return 0;
+        }
+        self.status_surface_layout(width, options).height()
     }
 
     pub(super) fn hint_footer_props(&self, options: ComposerRenderOptions<'_>) -> FooterProps {
         let mut props = self.footer_props();
-        if self.status_surface_height(options) > 0 {
+        if self.status_surface_enabled(options) {
             props.status_line_enabled = false;
             props.status_line_value = None;
             props.active_agent_label = None;
@@ -19,15 +31,12 @@ impl ChatComposer {
         props
     }
 
-    pub(super) fn render_status_surface(
+    fn status_surface_layout(
         &self,
-        area: Rect,
-        buf: &mut Buffer,
+        width: u16,
         options: ComposerRenderOptions<'_>,
-    ) {
-        if area.is_empty() {
-            return;
-        }
+    ) -> ExplicitStatusLine {
+        let area = Rect::new(0, 0, width, 1);
         let mut props = self.footer_props();
         let show_cycle_hint = !props.is_task_running
             && !self.blocks_direct_input
@@ -43,9 +52,9 @@ impl ChatComposer {
         props.is_task_running = false;
         let line = passive_footer_status_line(&props);
         let full = self.mode_indicator_line(show_cycle_hint);
-        let left_width = line
-            .as_ref()
-            .map_or(/*default*/ 0, |line| line.width() as u16);
+        let rows =
+            crate::render::line_utils::split_line_at_newlines(line.clone().unwrap_or_default());
+        let left_width = rows.first().map_or(0, |line| line.width() as u16);
         let full_width = full
             .as_ref()
             .map_or(/*default*/ 0, |line| line.width() as u16);
@@ -64,26 +73,33 @@ impl ChatComposer {
         let transition = self
             .effort_status_line_transition
             .as_ref()
-            .filter(|transition| !transition.is_finished());
+            .filter(|transition| !transition.is_finished() && rows.len() == 1);
         let line = if let Some(transition) = transition {
             transition.render_line(line.as_ref(), width)
         } else {
             line
         };
-        if let Some(line) = line {
-            render_footer_line(
-                area,
-                buf,
-                truncate_line_with_ellipsis_if_overflow(line, usize::from(width)),
-            );
+        ExplicitStatusLine::new(area.width, line.unwrap_or_default(), right)
+    }
+
+    pub(super) fn render_status_surface(
+        &self,
+        area: Rect,
+        buf: &mut Buffer,
+        options: ComposerRenderOptions<'_>,
+    ) {
+        if area.is_empty() {
+            return;
         }
-        if let Some(right) = right {
-            render_context_right(area, buf, &right);
-        }
+        self.status_surface_layout(area.width, options)
+            .render(area, buf);
         if let Some(url) = self.footer.status_line_hyperlink_url.as_deref() {
             mark_underlined_hyperlink(buf, area, url);
         }
-        if transition.is_some()
+        if self
+            .effort_status_line_transition
+            .as_ref()
+            .is_some_and(|transition| !transition.is_finished())
             && let Some(frame_requester) = &self.frame_requester
         {
             frame_requester.schedule_frame_in(EFFORT_STATUS_LINE_FRAME_TICK);

@@ -1,6 +1,29 @@
 use ratatui::text::Line;
 use ratatui::text::Span;
 
+/// Split explicit newlines without wrapping text or losing span styles and empty rows.
+pub(crate) fn split_line_at_newlines(line: Line<'static>) -> Vec<Line<'static>> {
+    let empty = Line {
+        style: line.style,
+        alignment: line.alignment,
+        ..Line::default()
+    };
+    let mut rows = vec![empty.clone()];
+    for span in line.spans {
+        for (index, part) in span.content.split('\n').enumerate() {
+            if index > 0 {
+                rows.push(empty.clone());
+            }
+            if !part.is_empty() {
+                rows.last_mut()
+                    .expect("at least one row")
+                    .push_span(Span::styled(part.to_owned(), span.style));
+            }
+        }
+    }
+    rows
+}
+
 /// Create a ratatui `Line` that borrows the contents of another line.
 pub fn line_to_borrowed<'a>(line: &'a Line<'_>) -> Line<'a> {
     Line {

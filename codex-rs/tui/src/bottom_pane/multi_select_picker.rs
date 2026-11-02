@@ -214,6 +214,34 @@ pub(crate) struct MultiSelectPicker {
 }
 
 impl MultiSelectPicker {
+    /// Add an enabled, orderable entry immediately after the selected entry.
+    /// Separate entries may return the same canonical ID after the owning view normalizes them.
+    pub(crate) fn insert_after_selection(&mut self, item: MultiSelectItem) {
+        let index = self
+            .state
+            .selected_idx
+            .and_then(|selected| self.filtered_indices.get(selected).copied())
+            .map_or(self.items.len(), |selected| selected + 1);
+        self.items.insert(index, item);
+        self.search_query.clear();
+        self.apply_filter();
+        self.state.selected_idx = self
+            .filtered_indices
+            .iter()
+            .position(|actual| *actual == index);
+        self.update_preview_line();
+        if let Some(on_change) = &self.on_change {
+            on_change(&self.items, &self.app_event_tx);
+        }
+    }
+
+    fn preview_rows(&self) -> Vec<Line<'static>> {
+        self.preview_line
+            .clone()
+            .map(crate::render::line_utils::split_line_at_newlines)
+            .unwrap_or_default()
+    }
+
     /// Creates a new builder for constructing a `MultiSelectPicker`.
     ///
     /// # Arguments
@@ -560,11 +588,12 @@ impl Renderable for MultiSelectPicker {
     fn desired_height(&self, width: u16) -> u16 {
         let rows = self.build_rows();
         let rows_height = self.rows_height(&rows);
-        let preview_height = if self.preview_line.is_some() { 1 } else { 0 };
+        let preview_height = self.preview_rows().len().try_into().unwrap_or(u16::MAX);
 
         let mut height = self.header.desired_height(width.saturating_sub(4));
         height = height.saturating_add(rows_height + 3);
-        height.saturating_add(self.footer_lines(width).len() as u16 + preview_height)
+        height
+            .saturating_add((self.footer_lines(width).len() as u16).saturating_add(preview_height))
     }
 
     fn render(&self, area: Rect, buf: &mut Buffer) {
@@ -572,11 +601,22 @@ impl Renderable for MultiSelectPicker {
             return;
         }
 
-        // Reserve the footer line for the key-hint row.
-        let preview_height = if self.preview_line.is_some() { 1 } else { 0 };
+        // Let the preview yield before the header, search, and selectable rows.
+        let preview_height: u16 = self.preview_rows().len().try_into().unwrap_or(u16::MAX);
         let hint_lines = self.footer_lines(area.width);
         let hint_height = hint_lines.len() as u16;
-        let footer_height = hint_height + preview_height;
+        let header_height = self.header.desired_height(area.width.saturating_sub(4));
+        let rows = self.build_rows();
+        let minimum_content_height = 1u16
+            .saturating_add(u16::from(header_height > 0))
+            .saturating_add(/*search*/ 1)
+            .saturating_add(rows.rows.len().clamp(1, 3) as u16);
+        let preview_height = preview_height.min(
+            area.height
+                .saturating_sub(hint_height)
+                .saturating_sub(minimum_content_height),
+        );
+        let footer_height = hint_height.saturating_add(preview_height);
         let [content_area, footer_area] =
             Layout::vertical([Constraint::Fill(1), Constraint::Length(footer_height)]).areas(area);
 
@@ -584,10 +624,6 @@ impl Renderable for MultiSelectPicker {
             .style(user_message_style())
             .render(content_area, buf);
 
-        let header_height = self
-            .header
-            .desired_height(content_area.width.saturating_sub(4));
-        let rows = self.build_rows();
         let rows_height = self.rows_height(&rows);
         let [header_area, search_area, list_area] =
             picker_rows::layout(content_area, header_height, /*search*/ 1, rows_height);
@@ -616,10 +652,12 @@ impl Renderable for MultiSelectPicker {
             picker_style::render_scroll_indicators(list_area, buf, rendered);
         }
 
-        let hint_area = if let Some(preview_line) = &self.preview_line {
-            let [preview_area, hint_area] =
-                Layout::vertical([Constraint::Length(1), Constraint::Length(hint_height)])
-                    .areas(footer_area);
+        let hint_area = if self.preview_line.is_some() {
+            let [preview_area, hint_area] = Layout::vertical([
+                Constraint::Length(preview_height),
+                Constraint::Length(hint_height),
+            ])
+            .areas(footer_area);
             let preview_area = Rect {
                 x: preview_area.x + 2,
                 y: preview_area.y,
@@ -627,9 +665,12 @@ impl Renderable for MultiSelectPicker {
                 height: preview_area.height,
             };
             let max_preview_width = preview_area.width.saturating_sub(2) as usize;
-            let preview_line =
-                truncate_line_with_ellipsis_if_overflow(preview_line.clone(), max_preview_width);
-            preview_line.render(preview_area, buf);
+            let preview_rows = self
+                .preview_rows()
+                .into_iter()
+                .map(|line| truncate_line_with_ellipsis_if_overflow(line, max_preview_width))
+                .collect::<Vec<_>>();
+            Paragraph::new(preview_rows).render(preview_area, buf);
             hint_area
         } else {
             footer_area
@@ -1040,6 +1081,53 @@ mod tests {
 
         picker.handle_key_event(KeyEvent::new(KeyCode::Char('a'), KeyModifiers::CONTROL));
         assert_eq!(picker.state.selected_idx, Some(0));
+    }
+
+    #[test]
+    fn tall_preview_yields_to_picker_controls_on_short_screens() {
+        let mut picker = test_picker(
+            (0..12)
+                .map(|index| {
+                    item(
+                        &format!("field-{index:02}"),
+                        /*orderable*/ true,
+                        /*section_break_after*/ false,
+                    )
+                })
+                .collect(),
+        );
+        picker.preview_line = Some(Line::from(vec![Span::raw("preview\n".repeat(40))]));
+        picker.handle_key_event(KeyCode::End.into());
+
+        for height in [6, 8, 10] {
+            let area = Rect::new(/*x*/ 0, /*y*/ 0, /*width*/ 80, height);
+            let mut buf = Buffer::empty(area);
+            picker.render(area, &mut buf);
+            let text = buf
+                .content
+                .chunks(usize::from(area.width))
+                .map(|row| {
+                    row.iter()
+                        .map(ratatui::buffer::Cell::symbol)
+                        .collect::<String>()
+                        .trim_end()
+                        .to_string()
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+            for expected in [
+                "Test",
+                "Type to search",
+                "› [ ] field-11",
+                "enter save",
+                "esc cancel",
+            ] {
+                assert!(text.contains(expected), "height={height}\n{text}");
+            }
+        }
+
+        picker.handle_key_event(KeyCode::Char(' ').into());
+        assert!(picker.items[11].enabled);
     }
 
     #[test]

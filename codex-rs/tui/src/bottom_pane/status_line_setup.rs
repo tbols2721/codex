@@ -5,6 +5,7 @@
 //!
 //! - **Select items**: Toggle which information is displayed
 //! - **Reorder items**: Use left/right arrows to change display order
+//! - **Assign rows**: Move enabled `line-break` markers between fields; Alt+Enter adds another
 //! - **Preview changes**: See a live preview of the configured status line
 //!
 //! # Available Status Line Items
@@ -55,6 +56,9 @@ const STATUS_LINE_USE_THEME_COLORS_ITEM_ID: &str = "status-line-use-theme-colors
 #[derive(EnumIter, EnumString, Display, Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 #[strum(serialize_all = "kebab_case")]
 pub(crate) enum StatusLineItem {
+    /// Start the next explicitly configured status row.
+    LineBreak,
+
     /// The current model name.
     #[strum(to_string = "model", serialize = "model-name")]
     ModelName,
@@ -172,6 +176,9 @@ impl StatusLineItem {
     /// User-visible description shown in the popup.
     pub(crate) fn description(self) -> &'static str {
         match self {
+            StatusLineItem::LineBreak => {
+                "Start the next line; move fields before or after this marker"
+            }
             StatusLineItem::ModelName => "Current model name",
             StatusLineItem::ModelWithReasoning => "Current model name with reasoning level",
             StatusLineItem::Reasoning => "Current reasoning level",
@@ -236,6 +243,7 @@ impl StatusLineItem {
 
     pub(crate) fn preview_item(self) -> StatusSurfacePreviewItem {
         match self {
+            StatusLineItem::LineBreak => StatusSurfacePreviewItem::LineBreak,
             StatusLineItem::ModelName => StatusSurfacePreviewItem::Model,
             StatusLineItem::ModelWithReasoning => StatusSurfacePreviewItem::ModelWithReasoning,
             StatusLineItem::Reasoning => StatusSurfacePreviewItem::Reasoning,
@@ -283,6 +291,8 @@ impl StatusLineItem {
 pub(crate) struct StatusLineSetupView {
     /// The underlying multi-select picker widget.
     picker: MultiSelectPicker,
+    next_line_break_id: usize,
+    add_row_shortcut: bool,
 }
 
 impl StatusLineSetupView {
@@ -305,7 +315,19 @@ impl StatusLineSetupView {
         app_event_tx: AppEventSender,
         list_keymap: ListKeymap,
     ) -> Self {
+        let add_row_event = crossterm::event::KeyEvent::new(
+            crossterm::event::KeyCode::Enter,
+            crossterm::event::KeyModifiers::ALT,
+        );
+        let add_row_shortcut = list_keymap.action_for(add_row_event).is_none()
+            && !list_keymap.has_chord_prefix(add_row_event);
+        let subtitle = if add_row_shortcut {
+            "Choose fields and rows. Move Start next line between fields. Alt+Enter adds a line."
+        } else {
+            "Choose fields and rows. Move Start next line between fields."
+        };
         let mut used_ids = HashSet::new();
+        let mut next_line_break_id = 0;
         let mut items = vec![MultiSelectItem {
             id: STATUS_LINE_USE_THEME_COLORS_ITEM_ID.to_string(),
             name: "Use theme colors".to_string(),
@@ -321,20 +343,22 @@ impl StatusLineSetupView {
                     continue;
                 };
                 let item_id = item.to_string();
-                if !used_ids.insert(item_id.clone()) {
+                if !used_ids.insert(item_id.clone()) && item != StatusLineItem::LineBreak {
                     continue;
                 }
-                items.push(Self::status_line_select_item(
-                    item,
-                    /*enabled*/ true,
-                    &preview_data,
-                ));
+                let mut selected =
+                    Self::status_line_select_item(item, /*enabled*/ true, &preview_data);
+                if item == StatusLineItem::LineBreak {
+                    selected.id = format!("line-break:{next_line_break_id}");
+                    next_line_break_id += 1;
+                }
+                items.push(selected);
             }
         }
 
         for item in StatusLineItem::iter() {
             let item_id = item.to_string();
-            if used_ids.contains(&item_id) {
+            if item != StatusLineItem::LineBreak && used_ids.contains(&item_id) {
                 continue;
             }
             items.push(Self::status_line_select_item(
@@ -347,7 +371,7 @@ impl StatusLineSetupView {
         Self {
             picker: MultiSelectPicker::builder(
                 "Configure Status Line".to_string(),
-                Some("Select which items to display in the status line.".to_string()),
+                Some(subtitle.to_string()),
                 app_event_tx,
             )
             .list_keymap(list_keymap)
@@ -363,7 +387,7 @@ impl StatusLineSetupView {
                     items
                         .iter()
                         .filter(|item| item.enabled)
-                        .filter_map(|item| item.id.parse::<StatusLineItem>().ok()),
+                        .filter_map(|item| Self::picker_item(&item.id)),
                     use_theme_colors,
                 )
             })
@@ -373,7 +397,7 @@ impl StatusLineSetupView {
                     .any(|id| id == STATUS_LINE_USE_THEME_COLORS_ITEM_ID);
                 let items = ids
                     .iter()
-                    .filter_map(|id| id.parse::<StatusLineItem>().ok())
+                    .filter_map(|id| Self::picker_item(id))
                     .collect::<Vec<_>>();
                 app_event.send(AppEvent::StatusLineSetup {
                     items,
@@ -384,6 +408,16 @@ impl StatusLineSetupView {
                 app_event.send(AppEvent::StatusLineSetupCancelled);
             })
             .build(),
+            next_line_break_id,
+            add_row_shortcut,
+        }
+    }
+
+    fn picker_item(id: &str) -> Option<StatusLineItem> {
+        if id.starts_with("line-break:") {
+            Some(StatusLineItem::LineBreak)
+        } else {
+            id.parse().ok()
         }
     }
 
@@ -396,6 +430,10 @@ impl StatusLineSetupView {
         let default_name = item.to_string();
         let default_description = item.description();
         let (name, description) = match item {
+            StatusLineItem::LineBreak => (
+                "Start next line".to_string(),
+                default_description.to_string(),
+            ),
             StatusLineItem::FiveHourLimit | StatusLineItem::WeeklyLimit => (
                 preview_data.rate_limit_item_name(item.preview_item(), &default_name),
                 preview_data.rate_limit_item_description(item.preview_item(), default_description),
@@ -424,6 +462,20 @@ impl BottomPaneView for StatusLineSetupView {
     }
 
     fn handle_key_event(&mut self, key_event: crossterm::event::KeyEvent) {
+        if self.add_row_shortcut
+            && crate::key_hint::alt(crossterm::event::KeyCode::Enter).is_press(key_event)
+        {
+            self.picker.insert_after_selection(MultiSelectItem {
+                id: format!("line-break:{}", self.next_line_break_id),
+                name: "Start next line".to_string(),
+                description: Some(StatusLineItem::LineBreak.description().to_string()),
+                enabled: true,
+                orderable: true,
+                section_break_after: false,
+            });
+            self.next_line_break_id += 1;
+            return;
+        }
         self.picker.handle_key_event(key_event);
     }
 
@@ -459,6 +511,152 @@ mod tests {
     use tokio::sync::mpsc::unbounded_channel;
 
     use crate::app_event::AppEvent;
+
+    #[test]
+    fn status_line_picker_respects_custom_alt_enter_accept() {
+        use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+        let (tx, mut rx) = unbounded_channel();
+        let ids = ["model", "line-break", "current-dir"].map(str::to_string);
+        let mut keymap = crate::keymap::RuntimeKeymap::defaults().list;
+        keymap.accept = vec![crate::key_hint::alt(KeyCode::Enter)];
+        let mut view = StatusLineSetupView::new(
+            Some(&ids),
+            true,
+            StatusSurfacePreviewData::default(),
+            AppEventSender::new(tx),
+            keymap,
+        );
+
+        assert!(!view.add_row_shortcut);
+        view.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT));
+
+        assert!(view.is_complete());
+        let AppEvent::StatusLineSetup { items, .. } = rx.try_recv().unwrap() else {
+            panic!("expected status line configuration");
+        };
+        assert_eq!(
+            items.iter().map(ToString::to_string).collect::<Vec<_>>(),
+            ids
+        );
+    }
+
+    #[test]
+    fn status_line_picker_keeps_a_disabled_line_break_available() {
+        use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+
+        let (tx, mut rx) = unbounded_channel();
+        let ids = ["model", "line-break", "current-dir"].map(str::to_string);
+        let mut keymap = crate::keymap::RuntimeKeymap::defaults().list;
+        keymap.accept = vec![crate::key_hint::alt(KeyCode::Enter)];
+        let mut view = StatusLineSetupView::new(
+            Some(&ids),
+            true,
+            StatusSurfacePreviewData::default(),
+            AppEventSender::new(tx),
+            keymap,
+        );
+
+        for ch in "start".chars() {
+            view.handle_key_event(KeyCode::Char(ch).into());
+        }
+        view.handle_key_event(KeyCode::Down.into());
+        view.handle_key_event(KeyCode::Char(' ').into());
+        view.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT));
+
+        let AppEvent::StatusLineSetup { items, .. } = rx.try_recv().unwrap() else {
+            panic!("expected status line configuration");
+        };
+        assert_eq!(
+            items,
+            vec![
+                StatusLineItem::ModelName,
+                StatusLineItem::LineBreak,
+                StatusLineItem::CurrentDir,
+                StatusLineItem::LineBreak,
+            ]
+        );
+    }
+
+    #[test]
+    fn status_line_picker_preserves_multiple_explicit_line_breaks() {
+        let (tx, mut rx) = unbounded_channel();
+        let ids = [
+            "model",
+            "line-break",
+            "current-dir",
+            "line-break",
+            "used-tokens",
+        ]
+        .map(str::to_string);
+        let mut view = StatusLineSetupView::new(
+            Some(&ids),
+            true,
+            StatusSurfacePreviewData::default(),
+            AppEventSender::new(tx),
+            crate::keymap::RuntimeKeymap::defaults().list,
+        );
+        view.handle_key_event(crossterm::event::KeyCode::Enter.into());
+        let AppEvent::StatusLineSetup { items, .. } = rx.try_recv().unwrap() else {
+            panic!("expected status line configuration");
+        };
+        assert_eq!(
+            items.iter().map(ToString::to_string).collect::<Vec<_>>(),
+            ids
+        );
+    }
+
+    #[test]
+    fn status_line_picker_can_add_and_move_a_line_break() {
+        use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+        let (tx, mut rx) = unbounded_channel();
+        let ids = ["model", "current-dir"].map(str::to_string);
+        let mut view = StatusLineSetupView::new(
+            Some(&ids),
+            true,
+            StatusSurfacePreviewData::default(),
+            AppEventSender::new(tx),
+            crate::keymap::RuntimeKeymap::defaults().list,
+        );
+        view.handle_key_event(KeyCode::Down.into());
+        view.handle_key_event(KeyEvent::new(KeyCode::Enter, KeyModifiers::ALT));
+        view.handle_key_event(KeyCode::Right.into());
+        view.handle_key_event(KeyCode::Enter.into());
+        let AppEvent::StatusLineSetup { items, .. } = rx.try_recv().unwrap() else {
+            panic!("expected status line configuration");
+        };
+        assert_eq!(
+            items,
+            vec![
+                StatusLineItem::ModelName,
+                StatusLineItem::CurrentDir,
+                StatusLineItem::LineBreak
+            ]
+        );
+    }
+
+    #[test]
+    fn status_line_preview_uses_the_selected_rows() {
+        let preview = StatusSurfacePreviewData::from_iter([
+            (StatusSurfacePreviewItem::Model, "MODEL-A"),
+            (StatusSurfacePreviewItem::CurrentDir, "DIR-B"),
+        ]);
+        let line = preview
+            .status_line_for_items(
+                [
+                    StatusLineItem::ModelName,
+                    StatusLineItem::LineBreak,
+                    StatusLineItem::CurrentDir,
+                ],
+                false,
+            )
+            .unwrap();
+        let rows = crate::render::line_utils::split_line_at_newlines(line);
+        assert_eq!(
+            rows.iter().map(|row| row.to_string()).collect::<Vec<_>>(),
+            vec!["MODEL-A", "DIR-B"]
+        );
+    }
 
     #[test]
     fn context_used_accepts_context_usage_legacy_id() {

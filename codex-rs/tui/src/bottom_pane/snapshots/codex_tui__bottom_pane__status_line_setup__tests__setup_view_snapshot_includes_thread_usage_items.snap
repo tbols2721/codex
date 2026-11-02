@@ -4,7 +4,7 @@ expression: "render_lines(&view, 100)"
 ---
                                                                                                     
   Configure Status Line                                                                             
-  Select which items to display in the status line.                                                 
+  Choose fields and rows. Move Start next line between fields. Alt+Enter adds a line.               
                                                                                                     
   Type to search                                                                                    
                                                                                                     
@@ -12,10 +12,10 @@ expression: "render_lines(&view, 100)"
   ───────────────────────                                                                           
   [x] thread-credits         Estimated current-thread credits (Enterprise workspaces only; omitted …
   [x] estimated-thread-cost  Estimated current-thread cost in USD (Enterprise workspaces only; omit…
+  [ ] Start next line        Start the next line; move fields before or after this marker           
   [ ] model                  Current model name                                                     
   [ ] model-with-reasoning   Current model name with reasoning level                                
   [ ] reasoning              Current reasoning level                                                
-  [ ] current-dir            Current working directory                                              
 ↓                                                                                                   
   5.2 credits · ~$1.82                                                                              
   space toggle · ←/→ reorder · enter save · esc cancel

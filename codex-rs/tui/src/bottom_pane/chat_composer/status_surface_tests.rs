@@ -58,6 +58,79 @@ fn render_with_height(
 }
 
 #[test]
+fn explicit_status_line_rows_clip_before_input_and_final_hint() {
+    let mut composer = composer();
+    composer.set_status_line(Some(Line::from(vec![Span::raw("FIRST\nSECOND\nTHIRD")])));
+    composer.set_text_content("draft stays visible".into(), Vec::new(), Vec::new());
+    let footer = TranscriptFooter {
+        text: "esc latest".into(),
+        cursor_column: None,
+        is_interactive: false,
+    };
+    for height in [4, 5, 7] {
+        let (text, cursor) = render_with_height(&composer, 40, Some(&footer), Some(height));
+        let (_, y) = cursor.expect("draft cursor remains visible");
+        assert!(
+            text.lines()
+                .nth(usize::from(y))
+                .unwrap()
+                .contains("draft stays visible"),
+            "height {height}: {text}"
+        );
+        assert!(
+            text.lines().last().unwrap().contains("esc latest"),
+            "height {height}: {text}"
+        );
+        if height == 4 {
+            assert!(!text.contains("FIRST"), "{text}");
+        } else {
+            assert!(text.contains("FIRST"), "{text}");
+        }
+        if height == 7 {
+            assert!(text.contains("SECOND"), "{text}");
+            assert!(text.contains("THIRD"), "{text}");
+        }
+    }
+}
+
+#[test]
+fn explicit_status_line_rows_survive_search_and_queue() {
+    let mut composer = composer();
+    composer.set_status_line(Some(Line::from(vec![Span::raw("MODEL\n\nTOKENS")])));
+    let footer = TranscriptFooter {
+        text: vec![
+            Line::from("Find: needle"),
+            Line::from("Enter next · Esc close"),
+        ]
+        .into(),
+        cursor_column: Some(8),
+        is_interactive: true,
+    };
+    let (search, cursor) = render(&composer, 48, Some(&footer));
+    assert_eq!(cursor, Some((10, search.lines().count() as u16 - 2)));
+    assert_eq!(
+        search.lines().last().map(str::trim),
+        Some("Enter next · Esc close")
+    );
+
+    composer.set_text_content("queued draft".into(), Vec::new(), Vec::new());
+    composer.set_task_running(/*running*/ true);
+    let (queue, _) = render(&composer, 48, None);
+    assert_eq!(
+        queue.lines().last().map(str::trim),
+        Some("tab to queue message")
+    );
+    for text in [&search, &queue] {
+        let rows = text.lines().map(str::trim).collect::<Vec<_>>();
+        assert!(
+            rows.windows(3)
+                .any(|rows| rows[0] == "MODEL" && rows[1].is_empty() && rows[2] == "TOKENS"),
+            "{text}"
+        );
+    }
+}
+
+#[test]
 fn passive_activity_keeps_shortcuts_only_when_the_complete_hint_fits() {
     let mut composer = composer();
     let mut line = Line::from(key_hint::key_label_spans("ctrl+o t/f4"));
