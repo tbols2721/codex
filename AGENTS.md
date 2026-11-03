@@ -11,6 +11,16 @@
 - Keep user edits to configuration and status-line rows. Do not reset them to a
   test fixture. User-specific configuration belongs under `~/.codex`.
 
+## Notes for Joe
+
+Read `notes.md` at the start of work on this project. It is the user-facing
+record of commands, settings, update steps, recovery options, and limitations
+Joe should know. Keep it current when work changes any of those details. Write
+practical instructions there; keep agent handoff and implementation detail in
+this file or the maintenance guide. Replace obsolete instructions instead of
+leaving conflicting advice. Do not put credentials or private configuration in
+the notes. Commit and push notes with the related changes to the user's fork.
+
 ## What this project does
 
 This is Joseph Brennan's Codex CLI fork. It adds explicit status-line rows.

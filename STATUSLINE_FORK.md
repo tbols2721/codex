@@ -1,5 +1,7 @@
 # Personal Codex status-line fork
 
+For daily commands, updates, and recovery, start with [notes.md](notes.md).
+
 `custom-main` is the default branch of `tbols2721/codex`. It contains the tested
 OpenAI release plus explicit status-line rows. The original `main` branch is
 retained. Do not use GitHub **Sync fork** on `custom-main`: update from a release
