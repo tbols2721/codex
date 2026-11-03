@@ -5,6 +5,11 @@ the required scripts directory. The source lives on `custom-main` in the same
 fork. Neither branch contains personal configuration or credentials.
 
 The local command `codex-statusline-update` links to `update.py` here.
+The local command `codexJoe` links to `codexJoe.py` here. It follows the
+promoted custom binary, uses the saved trial profile for runtime commands,
+and starts in the caller's current directory. An explicit `--profile` overrides
+the default. `codex` continues to select the official CLI. `codexJoe update`
+checks for releases with this maintenance tool.
 
 ```sh
 codex-statusline-update check
