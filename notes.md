@@ -81,6 +81,35 @@ This selects the previous saved package for new `codexJoe` sessions. Git history
 stays in place. Keep the current and previous packages until you no longer need
 that recovery option.
 
+## API credit-offer MCP warning
+
+On November 3, 2026, the optional `openai-api-credit-promo` server in the OpenAI
+Developers plugin failed at startup with HTTP 403. A check of its endpoint
+returned `cf-mitigated: challenge`, which identifies a Cloudflare security
+challenge. The remote endpoint remains blocked; the local mitigation skips
+that optional connection.
+
+The following setting is now in `~/.codex/config.toml`:
+
+```toml
+[plugins."openai-developers@openai-curated-remote".mcp_servers."openai-api-credit-promo"]
+enabled = false
+```
+
+This applies to new sessions that load the base config, including `codexJoe`.
+Credit-offer tools are unavailable while this connection is disabled. The rest
+of the plugin stays enabled. A fresh `codexJoe` session started without the
+warning; `/mcp` showed this server as disabled and the local API-key confirmation
+server as connected. Your custom profile and saved rows were preserved.
+
+Restart `codexJoe` to load the setting. To try credit offers again after the
+endpoint works, change this entry to `enabled = true` and restart. The warning
+can return if the endpoint still blocks the connection. Do not edit the cached
+plugin files; updates can replace them.
+
+A private backup of the previous base config is stored beside it as
+`config.toml.before-credit-promo-disable.Z0WWMP`.
+
 ## Where your settings and changes live
 
 | Item | Location |

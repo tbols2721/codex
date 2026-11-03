@@ -97,6 +97,16 @@ selection and one ephemeral `gpt-6.1-sol` request returning `OK` passed.
 Never fix this by changing only the displayed version or one HTTP header. Do
 not delete login files, log out, or remove model caches as a routine repair.
 
+The optional `openai-api-credit-promo` MCP endpoint also returned HTTP 403 with
+`cf-mitigated: challenge` on November 3, 2026. The supported per-server policy
+`plugins."openai-developers@openai-curated-remote".mcp_servers."openai-api-credit-promo".enabled`
+is now false in the base user config. This skips the blocked credit-offer
+connection and preserves the rest of the plugin. Fresh native startup and
+`/mcp` confirmed the warning was gone, the promo server disabled, and local
+API-key confirmation connected. Read `notes.md` for the setting and recovery
+instructions. Do not remove this policy as a routine cleanup, edit cached
+plugin manifests, or treat this endpoint failure as a model-login failure.
+
 ## Build, test, and update
 
 Read `STATUSLINE_FORK.md` and the maintenance `README.md` before an update.
