@@ -1,8 +1,15 @@
 # Codex status-line maintenance
 
-This branch stores the local update scripts. It is a separate Git worktree in
-the required scripts directory. The source lives on `custom-main` in the same
-fork. Neither branch contains personal configuration or credentials.
+This directory stores the maintained update scripts on `custom-main`, beside
+the fork source. The user approved this exception to the general script
+location rule on November 3, 2026. Commit source, scripts, and related notes
+together. Do not commit personal configuration or credentials.
+
+The old `statusline-maintenance` branch history was imported here. That
+branch is retained as history and has no active worktree. The copy under
+`file.scripts.d/codex-statusline-maintenance` is an independent reference
+snapshot: ordinary files, no `.git`, symlinks, or automatic sync. Installed
+commands do not use the snapshot.
 
 The local command `codex-statusline-update` links to `update.py` here.
 The local command `codexJoe` links to `codexJoe.py` here. It follows the
@@ -56,21 +63,23 @@ temporary local repositories, not the user's fork. They check history retention,
 conflict stops, stale receipts, binary and helper changes, fast-forward pushes,
 initial adoption, failed writes, interrupted switches, and rollback.
 
-The fork's `custom-main` and `statusline-maintenance` branches disallow force
-pushes and deletion through GitHub branch protection. The policy body is stored
-in `branch-protection.json`; it does not require a PR or external CI.
+The active `custom-main` and historical `statusline-maintenance` branches
+retain their existing protection against force pushes and deletion. The
+policy body is stored in `branch-protection.json`; it does not require a
+PR or external CI.
 
 To restore the tools on a new machine:
 
 ```sh
 git clone --branch custom-main https://github.com/tbols2721/codex.git ~/Research/codex-statusline
 git -C ~/Research/codex-statusline remote add upstream https://github.com/openai/codex.git
-git -C ~/Research/codex-statusline worktree add \
-  /home/jbrennan/Research/file.research.d/file.scripts.d/codex-statusline-maintenance \
-  statusline-maintenance
+mkdir -p ~/.local/bin
+ln -s ~/Research/codex-statusline/maintenance/codexJoe.py ~/.local/bin/codexJoe
+ln -s ~/Research/codex-statusline/maintenance/update.py ~/.local/bin/codex-statusline-update
 ```
 
-Adapt paths if the home directory differs. The local command is an executable
-symlink to this directory's `update.py`. Build outputs and verification receipts
-are local, so run verification again after recovery. Keep personal configuration
-and login backups separate from this public Git fork.
+Create the links only when those command paths are unused. Adapt the script
+defaults if the home directory differs. No extra worktree is needed. Build
+outputs and verification receipts are local, so run verification again after
+recovery. Keep personal configuration and login backups separate from this
+public Git fork.

@@ -7,10 +7,17 @@ Read and maintain `/home/jbrennan/Research/codex-statusline/notes.md` when scrip
 changes affect commands, configuration, update steps, or recovery information
 Joe needs. Commit those user-facing notes in the source worktree.
 
-This directory is a Git worktree on `statusline-maintenance` in
-`tbols2721/codex`. The source checkout is on `custom-main`. Save and push each
-worktree's changes separately. Do not commit personal configuration or secrets.
-All scripts must stay under `/home/jbrennan/Research/file.research.d/file.scripts.d/`.
+This directory is part of the `custom-main` checkout in `tbols2721/codex`.
+The user approved an exception to the general script-location rule on
+November 3, 2026: maintain these scripts here. Commit and push scripts,
+source, and related notes together on `custom-main`. Do not commit personal
+configuration or secrets.
+
+The old `statusline-maintenance` branch is retained as history. Its history
+was imported into `maintenance/`; it has no active worktree. The plain copy
+under `file.scripts.d/codex-statusline-maintenance` is an independent reference
+snapshot. Do not develop or run maintenance there, create command links to
+it, or add automatic synchronization.
 
 - `codexJoe.py`: PATH launcher. Preserve caller cwd, argv, environment, explicit
   profile selection, and subcommand-aware defaults. It follows the promoted

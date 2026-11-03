@@ -3,8 +3,13 @@
 ## User instructions
 
 - Write clear, direct English, about 80% of the way to ASD-STE100.
-- Save every script you create under
+- General rule: save scripts under
   `/home/jbrennan/Research/file.research.d/file.scripts.d/`.
+- User-approved exception (November 3, 2026): maintain Codex fork scripts
+  in this checkout under `maintenance/`, on `custom-main`. The copy under
+  `file.scripts.d/codex-statusline-maintenance` is an independent reference
+  snapshot. It has no Git worktree link, command links, or automatic sync.
+  Do not develop the fork or run maintenance from that snapshot.
 - Work on this fork in its own directory under `~/Research`. Do not develop it
   inside `file.research.d` or modify the reference checkout in `~/Git`.
 - Carry out authorized local work. Ask only when a material choice is unresolved.
@@ -41,11 +46,12 @@ needed; do not copy a stale layout from these notes over it.
 
 - `codex`: official CLI, linked through `~/.codex/packages/standalone/current`.
 - `codexJoe`: custom launcher on PATH at `~/.local/bin/codexJoe`. Its script is
-  `codexJoe.py` in the maintenance worktree below. It starts in the caller's cwd.
+  `maintenance/codexJoe.py` in this checkout. It starts in the caller's cwd.
 - `codex-statusline-update`: the maintenance `update.py` command on PATH.
 - Source: `/home/jbrennan/Research/codex-statusline`.
 - Reference only: `/home/jbrennan/Git/openai-codex`.
-- Maintenance worktree:
+- Maintained scripts: `/home/jbrennan/Research/codex-statusline/maintenance`.
+- Independent reference snapshot:
   `/home/jbrennan/Research/file.research.d/file.scripts.d/codex-statusline-maintenance`.
 - Candidate worktrees: `~/Research/codex-statusline-updates/<version>`.
 - Custom packages: `~/.local/lib/codex-statusline/<version>-<commit>-<id>`.
@@ -69,7 +75,9 @@ not invoke the official installer. Do not replace the official `codex` command.
 - `origin`: `https://github.com/tbols2721/codex.git`.
 - `upstream`: `https://github.com/openai/codex.git`.
 - `custom-main`: maintained source branch and the fork's default branch.
-- `statusline-maintenance`: separate branch/worktree for scripts and their docs.
+- `maintenance/` on `custom-main`: active scripts and their docs.
+- `statusline-maintenance`: retained historical branch. Its complete history
+  was imported under `maintenance/`; it is no longer an active worktree.
 - The fork's original `main` is retained. It is not the custom release branch.
 - Both maintained branches block force pushes and deletion on GitHub.
 - Use normal commits and fast-forward pushes to the user's fork. Do not rebase,
@@ -79,8 +87,9 @@ not invoke the official installer. Do not replace the official `codex` command.
 - First tested source tag: `statusline-tested-0.166.0`. Backup branches also keep
   the original feature commits. Promotion adds a `statusline-before-*` tag.
 - Keep binaries, credentials, personal configs, caches, and receipts out of Git.
-- Commit and push source and maintenance changes in their respective worktrees.
-  A source commit does not save changes in the maintenance branch.
+- Commit and push source, maintenance scripts, and related notes together on
+  `custom-main`. The research repository stores only the independent reference
+  snapshot. Do not register it as a submodule or worktree.
 
 ## Important failure already fixed
 
@@ -109,8 +118,8 @@ plugin manifests, or treat this endpoint failure as a model-login failure.
 
 ## Build, test, and update
 
-Read `STATUSLINE_FORK.md` and the maintenance `README.md` before an update.
-The maintenance `AGENTS.md` explains script changes and verification details.
+Read `STATUSLINE_FORK.md` and `maintenance/README.md` before an update.
+`maintenance/AGENTS.md` explains script changes and verification details.
 
 Use an exact stable release tag. `update.py stage` merges it into a candidate
 branch and worktree. Conflicts require inspection and a manual resolution in

@@ -15,8 +15,17 @@ release version; `0.0.0` can change model access and credential-store behavior.
 ## Local files
 
 - Source: `/home/jbrennan/Research/codex-statusline`
-- Scripts: `/home/jbrennan/Research/file.research.d/file.scripts.d/codex-statusline-maintenance`
-- Script backup: the `statusline-maintenance` branch in this fork
+- Maintained scripts: `/home/jbrennan/Research/codex-statusline/maintenance`
+- Source and script branch: `custom-main`
+- Historical script branch: `statusline-maintenance` (history imported into
+  `maintenance/`; no active worktree)
+- Independent reference copy:
+  `/home/jbrennan/Research/file.research.d/file.scripts.d/codex-statusline-maintenance`
+
+The user approved an exception to the general script-location rule for
+these maintained fork scripts. Commit them with source and notes on
+`custom-main`. The reference copy has no Git link or automatic sync and is
+not used by the installed commands.
 - Personal settings: `~/.codex/config.toml` and `~/.codex/statusline-trial.config.toml`
 
 Personal settings, login files, model caches, and compiled binaries are not
@@ -40,12 +49,12 @@ update tool; use the procedure below to build and promote an update.
 
 Future sessions should read this checkout's `AGENTS.md`. A short pointer in
 `~/.codex/AGENTS.md` makes it discoverable from other working directories. The
-maintenance worktree also has its own `AGENTS.md` for script changes.
+`maintenance/` directory has its own `AGENTS.md` for script changes.
 
 ## Update procedure
 
-Use `update.py` in the scripts directory. Run `python3 update.py --help` for
-the commands and options.
+Use `codex-statusline-update`, which links to `maintenance/update.py` in
+this checkout. Run `codex-statusline-update --help` for commands and options.
 
 1. Run `check` to read the latest stable OpenAI release.
 2. Run `stage rust-vX.Y.Z` to merge that exact release into a new branch and
@@ -73,12 +82,13 @@ process can guarantee a conflict-free merge.
 
 ## Recovery
 
-`python3 update.py rollback` switches the trial launcher to its previous package.
+`codex-statusline-update rollback` switches the trial launcher to its previous package.
 It leaves Git history in place. A later fixed release can then move forward
 normally. Backup tags preserve the source before each promotion. Avoid resetting
 or force-pushing `custom-main`.
 
-To recover source on another machine, clone this fork and check out
-`custom-main`. Check out the `statusline-maintenance` branch in your scripts
-directory for the update tools. Change the command-line paths for another home
-directory. Keep the matching official package available for build verification.
+To recover source and scripts on another machine, clone this fork on
+`custom-main`. Both are included in that checkout. Follow
+`maintenance/README.md` to create the command links. Adapt the script
+defaults for a different home directory. Keep the matching official package
+available for build verification. Do not restore the old maintenance worktree.

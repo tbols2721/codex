@@ -119,11 +119,25 @@ A private backup of the previous base config is stored beside it as
 | Custom profile and saved rows | `~/.codex/statusline-trial.config.toml` |
 | Custom executable packages | `~/.local/lib/codex-statusline/` |
 | Update and rollback state | `~/.codex/statusline-maintenance/installation.json` |
-| Maintained scripts | `~/Research/file.research.d/file.scripts.d/codex-statusline-maintenance/` |
+| Maintained scripts | `~/Research/codex-statusline/maintenance/` |
+| Independent reference copy | `~/Research/file.research.d/file.scripts.d/codex-statusline-maintenance/` |
 
 The fork is [tbols2721/codex](https://github.com/tbols2721/codex).
-`custom-main` is the default source branch. `statusline-maintenance` stores the
-scripts. Both are protected against force pushes and branch deletion.
+`custom-main` is the active branch for both source and maintenance scripts.
+On November 3, 2026, the maintenance branch history was imported into
+`maintenance/`. The old `statusline-maintenance` branch remains as history;
+it has no active worktree. Both branches retain their existing protection.
+
+The maintained Codex scripts are an approved exception to the general
+`file.scripts.d` location rule. `codexJoe` and `codex-statusline-update` now
+link to scripts in `~/Research/codex-statusline/maintenance/`. Their commands
+and the selected custom binary are unchanged. Commit script and source
+changes, with these notes, on `custom-main`.
+
+The reference copy under `file.scripts.d` contains ordinary files. It has no
+`.git` file, symlinks, or automatic sync. The commands do not use it. Do not
+run its scripts to maintain the fork. Its `SNAPSHOT.json` records the copied
+source commit; later changes to the active scripts do not update this copy.
 
 Use the update commands above to bring in OpenAI releases. GitHub **Sync fork**
 is not the update procedure for `custom-main`.
