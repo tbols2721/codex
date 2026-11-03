@@ -3,6 +3,9 @@
 Read `/home/jbrennan/Research/codex-statusline/AGENTS.md` first. It holds the
 project history, user requirements, paths, and update policy. Then read this
 worktree's `README.md` and the source checkout's `STATUSLINE_FORK.md`.
+Read and maintain `/home/jbrennan/Research/codex-statusline/notes.md` when script
+changes affect commands, configuration, update steps, or recovery information
+Joe needs. Commit those user-facing notes in the source worktree.
 
 This directory is a Git worktree on `statusline-maintenance` in
 `tbols2721/codex`. The source checkout is on `custom-main`. Save and push each
