@@ -20,6 +20,26 @@ release version; `0.0.0` can change model access and credential-store behavior.
 Personal settings, login files, model caches, and compiled binaries are not
 committed to Git. The scripts do not overwrite the personal status-line layout.
 
+## Choose a CLI
+
+Both commands are on PATH:
+
+```sh
+codex       # Official build
+codexJoe    # Custom build with the saved three-row profile
+```
+
+`codexJoe` starts in your current directory. Runtime commands use
+`statusline-trial` unless you select another profile with `--profile`. Plain
+interactive sessions, `resume`, and `fork` use the local runtime. Utilities
+such as `debug models` and `login` pass through to the custom CLI without added
+runtime flags. `codexJoe update` checks for releases through the maintained
+update tool; use the procedure below to build and promote an update.
+
+Future sessions should read this checkout's `AGENTS.md`. A short pointer in
+`~/.codex/AGENTS.md` makes it discoverable from other working directories. The
+maintenance worktree also has its own `AGENTS.md` for script changes.
+
 ## Update procedure
 
 Use `update.py` in the scripts directory. Run `python3 update.py --help` for
