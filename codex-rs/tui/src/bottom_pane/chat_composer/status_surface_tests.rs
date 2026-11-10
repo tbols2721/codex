@@ -175,7 +175,9 @@ fn render_with_height(
 #[test]
 fn explicit_status_line_rows_clip_before_input_and_final_hint() {
     let mut composer = composer();
-    composer.set_status_line(Some(Line::from(vec![Span::raw("FIRST\nSECOND\nTHIRD")])));
+    composer.set_status_line(Some(
+        Line::from(vec![Span::raw("FIRST\nSECOND\nTHIRD")]).into(),
+    ));
     composer.set_text_content("draft stays visible".into(), Vec::new(), Vec::new());
     let footer = TranscriptFooter {
         text: "esc latest".into(),
@@ -211,7 +213,7 @@ fn explicit_status_line_rows_clip_before_input_and_final_hint() {
 #[test]
 fn explicit_status_line_rows_survive_search_and_queue() {
     let mut composer = composer();
-    composer.set_status_line(Some(Line::from(vec![Span::raw("MODEL\n\nTOKENS")])));
+    composer.set_status_line(Some(Line::from(vec![Span::raw("MODEL\n\nTOKENS")]).into()));
     let footer = TranscriptFooter {
         text: vec![
             Line::from("Find: needle"),

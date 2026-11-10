@@ -150,11 +150,14 @@ fn interactive_query_keeps_focus_over_underlying_hints_but_empty_override_wins()
 #[test]
 fn status_line_fields_stay_on_assigned_rows_at_every_width() {
     let mut composer = composer();
-    composer.set_status_line(Some(Line::from(vec![
-        ratatui::text::Span::raw("MODEL-A · PROJECT-B"),
-        ratatui::text::Span::raw("\n"),
-        ratatui::text::Span::raw("TOKENS-C · COST-D"),
-    ])));
+    composer.set_status_line(Some(
+        Line::from(vec![
+            ratatui::text::Span::raw("MODEL-A · PROJECT-B"),
+            ratatui::text::Span::raw("\n"),
+            ratatui::text::Span::raw("TOKENS-C · COST-D"),
+        ])
+        .into(),
+    ));
     for separate_status_line in [false, true] {
         let options = ComposerRenderOptions {
             separate_status_line,
@@ -204,13 +207,18 @@ fn warning_notice_only_limits_the_last_visible_status_row() {
     composer.set_collaboration_modes_enabled(/*enabled*/ true);
     composer.set_collaboration_mode_indicator(Some(CollaborationModeIndicator::Plan));
     composer.footer.show_warnings_key = Some(crate::key_hint::plain(KeyCode::F(2)).into());
-    composer.set_status_line(Some(Line::from(vec![
-        ratatui::text::Span::raw("MODEL-A · PROJECT-B · BRANCH-C · CONTEXT-D · REASONING-E"),
-        ratatui::text::Span::raw("\n"),
-        ratatui::text::Span::raw("MIDDLE-A · FIELD-B · FIELD-C · FIELD-D · FIELD-E · FIELD-F"),
-        ratatui::text::Span::raw("\n"),
-        ratatui::text::Span::raw("TOKENS-A · COST-B · INPUT-C · OUTPUT-D · LIMIT-E · SESSION-F"),
-    ])));
+    composer.set_status_line(Some(
+        Line::from(vec![
+            ratatui::text::Span::raw("MODEL-A · PROJECT-B · BRANCH-C · CONTEXT-D · REASONING-E"),
+            ratatui::text::Span::raw("\n"),
+            ratatui::text::Span::raw("MIDDLE-A · FIELD-B · FIELD-C · FIELD-D · FIELD-E · FIELD-F"),
+            ratatui::text::Span::raw("\n"),
+            ratatui::text::Span::raw(
+                "TOKENS-A · COST-B · INPUT-C · OUTPUT-D · LIMIT-E · SESSION-F",
+            ),
+        ])
+        .into(),
+    ));
     let width = 80;
     for height_limit in [None, Some(5), Some(4)] {
         let options = ComposerRenderOptions::default();
@@ -275,11 +283,14 @@ fn status_line_keeps_empty_rows_and_right_indicator_on_first_row() {
     let mut composer = composer();
     composer.set_collaboration_modes_enabled(/*enabled*/ true);
     composer.set_collaboration_mode_indicator(Some(CollaborationModeIndicator::Plan));
-    composer.set_status_line(Some(Line::from(vec![
-        ratatui::text::Span::raw("MODEL"),
-        ratatui::text::Span::raw("\n\n"),
-        ratatui::text::Span::raw("TOKENS"),
-    ])));
+    composer.set_status_line(Some(
+        Line::from(vec![
+            ratatui::text::Span::raw("MODEL"),
+            ratatui::text::Span::raw("\n\n"),
+            ratatui::text::Span::raw("TOKENS"),
+        ])
+        .into(),
+    ));
     for separate_status_line in [false, true] {
         let options = ComposerRenderOptions {
             separate_status_line,

@@ -1107,7 +1107,7 @@ mod tests {
                 })
                 .collect(),
         );
-        picker.preview_line = Some(Line::from(vec![Span::raw("preview\n".repeat(40))]));
+        picker.preview_line = Some(Line::from(vec![Span::raw("preview\n".repeat(40))]).into());
         picker.handle_key_event(KeyCode::End.into());
 
         for height in [6, 8, 10] {
