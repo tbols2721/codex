@@ -63,7 +63,7 @@ class WorkflowTests(unittest.TestCase):
         self.git("add", ".")
         self.git("commit", "--quiet", "-m", message)
 
-    def release(self, conflict=False):
+    def release(self, conflict=False, annotated=False):
         self.git("switch", "--quiet", "upstream")
         self.write("codex-rs/Cargo.toml", '[workspace.package]\nversion = "1.1.0"\n')
         if conflict:
@@ -71,7 +71,10 @@ class WorkflowTests(unittest.TestCase):
         else:
             self.write("new-upstream.txt", "new release\n")
         self.save("Release two")
-        self.git("tag", self.args.tag)
+        if annotated:
+            self.git("tag", "-a", self.args.tag, "-m", "Annotated upstream release")
+        else:
+            self.git("tag", self.args.tag)
         self.git("push", "--quiet", "upstream", f"refs/tags/{self.args.tag}")
         self.git("switch", "--quiet", update.BRANCH)
 
@@ -143,6 +146,12 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(update.commit(self.repo), self.original)
         self.assertIn("UU feature.txt", update.git(self.args.updates / "1.1.0", "status", "--porcelain", capture=True))
         self.assertFalse((self.repo / "bin/codex-statusline").exists())
+
+    def test_annotated_release_can_be_staged(self):
+        self.release(annotated=True)
+        self.stage()
+        self.assertEqual(update.metadata(self.args.candidate)["version"], "1.1.0")
+        self.assertEqual(update.commit(self.repo), self.original)
 
     def test_changed_binary_cannot_be_promoted(self):
         self.release()

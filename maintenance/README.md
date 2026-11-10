@@ -61,7 +61,8 @@ require changes to these scripts; failed checks stop promotion.
 Run the update workflow tests with `python3 test_update.py`. These tests use
 temporary local repositories, not the user's fork. They check history retention,
 conflict stops, stale receipts, binary and helper changes, fast-forward pushes,
-initial adoption, failed writes, interrupted switches, and rollback.
+annotated release tags, initial adoption, failed writes, interrupted switches,
+and rollback.
 
 The active `custom-main` and historical `statusline-maintenance` branches
 retain their existing protection against force pushes and deletion. The

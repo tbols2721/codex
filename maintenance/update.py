@@ -156,7 +156,7 @@ def metadata(checkout, pending_merge=False):
     if actual != data["commit"]:
         raise Stop("The upstream tag and recorded upstream commit differ.")
     if pending_merge:
-        if git(checkout, "rev-parse", "MERGE_HEAD", capture=True) != actual:
+        if git(checkout, "rev-parse", "MERGE_HEAD^{commit}", capture=True) != actual:
             raise Stop("The pending merge does not match the recorded release.")
     else:
         git(checkout, "merge-base", "--is-ancestor", actual, "HEAD")
