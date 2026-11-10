@@ -94,6 +94,7 @@ impl FooterContent {
             content => {
                 let line = content.into_hyperlink_line();
                 let mut offset = 0;
+                let newline_width = HyperlinkLine::from("\n").source_width();
                 split_line_at_newlines(line.line)
                     .into_iter()
                     .map(|text| {
@@ -109,7 +110,8 @@ impl FooterContent {
                                     .then(|| link.with_columns(start - offset..stop - offset))
                             })
                             .collect();
-                        offset = end;
+                        // Source columns include the marker removed between painted rows.
+                        offset = end + newline_width;
                         Self::HyperlinkLine(row)
                     })
                     .collect()
