@@ -52,9 +52,11 @@ impl ChatComposer {
         props.is_task_running = false;
         let line = passive_footer_status_line(&props);
         let full = self.mode_indicator_line(show_cycle_hint);
-        let rows =
-            crate::render::line_utils::split_line_at_newlines(line.clone().unwrap_or_default());
-        let left_width = rows.first().map_or(0, |line| line.width() as u16);
+        let rows = line
+            .clone()
+            .map(FooterContent::into_rows)
+            .unwrap_or_default();
+        let left_width = rows.first().map_or(0, FooterContent::width);
         let full_width = full
             .as_ref()
             .map_or(/*default*/ 0, |line| line.width() as u16);
@@ -74,12 +76,19 @@ impl ChatComposer {
             .effort_status_line_transition
             .as_ref()
             .filter(|transition| !transition.is_finished() && rows.len() == 1);
-        let line = if let Some(transition) = transition {
-            transition.render_line(line.as_ref(), width)
+        let content = if let Some(transition) = transition {
+            let current = line.map(FooterContent::into_hyperlink_line);
+            transition
+                .render_line(current, width)
+                .map(FooterContent::HyperlinkLine)
         } else {
             line
         };
-        ExplicitStatusLine::new(area.width, line.unwrap_or_default(), right)
+        ExplicitStatusLine::new(
+            area.width,
+            content.unwrap_or_else(|| Line::default().into()),
+            right,
+        )
     }
 
     pub(super) fn render_status_surface(
@@ -93,9 +102,6 @@ impl ChatComposer {
         }
         self.status_surface_layout(area.width, options)
             .render(area, buf);
-        if let Some(url) = self.footer.status_line_hyperlink_url.as_deref() {
-            mark_underlined_hyperlink(buf, area, url);
-        }
         if self
             .effort_status_line_transition
             .as_ref()

@@ -1,6 +1,8 @@
 //! Persistent status survives transient footer modes and suggestion overlays.
 
 use super::*;
+use crate::terminal_hyperlinks::HyperlinkLine;
+use crate::terminal_hyperlinks::strip_osc8;
 use pretty_assertions::assert_eq;
 use tokio::sync::mpsc::unbounded_channel;
 
@@ -14,8 +16,121 @@ fn composer() -> ChatComposer {
         /*disable_paste_burst*/ true,
     );
     composer.set_status_line_enabled(/*enabled*/ true);
-    composer.set_status_line(Some(Line::from("MODEL · ~/project · Context 20% used")));
+    composer.set_status_line(Some(
+        Line::from("MODEL · ~/project · Context 20% used").into(),
+    ));
     composer
+}
+
+#[test]
+fn status_line_rows_keep_pr_links_after_empty_rows_and_resize() {
+    use crate::bottom_pane::status_line_content::StatusLineRenderer;
+    use crate::bottom_pane::status_line_setup::StatusLineItem;
+
+    let url = "https://example.com/pr/42";
+    for renderer in [StatusLineRenderer::Native, StatusLineRenderer::Extension] {
+        let mut composer = composer();
+        composer.set_status_line(renderer.content(
+            [
+                (StatusLineItem::ModelName, "MODEL".to_string()),
+                (StatusLineItem::LineBreak, "\n".to_string()),
+                (StatusLineItem::LineBreak, "\n".to_string()),
+                (StatusLineItem::PullRequestNumber, "PR #42".to_string()),
+                (StatusLineItem::CurrentDir, "project".to_string()),
+            ],
+            false,
+            None,
+            Some(url),
+        ));
+        for separate_status_line in [false, true] {
+            for width in [8, 40] {
+                let options = composer.resolve_render_options(ComposerRenderOptions {
+                    separate_status_line,
+                    ..ComposerRenderOptions::default()
+                });
+                let area = Rect::new(
+                    0,
+                    0,
+                    width,
+                    composer.desired_height_with_options(width, options),
+                );
+                let mut buffer = Buffer::empty(area);
+                composer.render_with_options(area, &mut buffer, None, options);
+                let model_row = (0..area.height)
+                    .find(|y| {
+                        (0..width)
+                            .map(|x| strip_osc8(buffer[(x, *y)].symbol()))
+                            .collect::<String>()
+                            .contains("MODEL")
+                    })
+                    .expect("model remains on its configured row");
+                assert!((0..width).all(|x| buffer[(x, model_row + 1)].symbol() == " "));
+                let linked = buffer
+                    .content
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, cell)| cell.symbol().contains(url))
+                    .collect::<Vec<_>>();
+                assert_eq!(
+                    linked.len(),
+                    if width == 8 { 5 } else { 6 },
+                    "{renderer:?}: {buffer:?}"
+                );
+                for (index, cell) in linked {
+                    assert_eq!(index / usize::from(width), usize::from(model_row + 2));
+                    assert!(!cell.symbol().contains('…'));
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn extension_status_line_clips_links_to_footer_layout() {
+    let mut composer = composer();
+    let tree = serde_json::from_value(serde_json::json!({
+        "type": "row", "props": {}, "children": [
+            { "type": "text", "props": { "text": "plain" } },
+            { "type": "row", "props": {}, "children": [
+                { "type": "text", "props": { "text": " · " } },
+                { "type": "link", "props": { "href": "https://example.com/pr/42" }, "children": [
+                    { "type": "text", "props": { "text": "PR #42" } }
+                ] }
+            ] }
+        ]
+    }))
+    .unwrap();
+    composer.set_status_line(Some(FooterContent::Extension { content: tree }));
+
+    for separate_status_line in [false, true] {
+        for width in [12, 40] {
+            let options = composer.resolve_render_options(ComposerRenderOptions {
+                separate_status_line,
+                ..ComposerRenderOptions::default()
+            });
+            let area = Rect::new(
+                /*x*/ 0,
+                /*y*/ 0,
+                width,
+                composer.desired_height_with_options(width, options),
+            );
+            let mut buffer = Buffer::empty(area);
+            composer.render_with_options(area, &mut buffer, /*mask_char*/ None, options);
+            let linked = buffer
+                .content
+                .iter()
+                .filter(|cell| cell.symbol().contains("https://example.com/pr/42"))
+                .collect::<Vec<_>>();
+            assert_eq!(linked.len(), if width == 12 { 1 } else { 6 }, "{buffer:?}");
+            assert!(linked.iter().all(|cell| !cell.symbol().contains('…')));
+            assert!(buffer.content.iter().any(|cell| cell.symbol() == "p"));
+        }
+    }
+
+    composer.set_active_agent_label(Some("bot".to_string()));
+    let (output, _) = render(&composer, /*width*/ 40, /*footer*/ None);
+    assert!(output.contains("plain"), "{output}");
+    assert!(!output.contains("bot"), "{output}");
 }
 
 fn render(
@@ -174,9 +289,14 @@ fn fullscreen_plan_indicator_keeps_the_cycle_hint_when_it_fits() {
     );
     insta::assert_snapshot!("fullscreen_plan_cycle_hint", wide);
 
-    let (narrow, _) = render(&composer, /*width*/ 44, /*footer*/ None);
-    assert!(narrow.contains("Plan mode"), "{narrow}");
-    assert!(!narrow.contains("⇧tab"), "{narrow}");
+    let mut status = HyperlinkLine::from("project · ");
+    status.push_span("PR #42".underlined(), Some("https://example.com/pull/42"));
+    composer.set_status_line(Some(status.into()));
+    composer.set_active_agent_label(Some("reviewer".to_string()));
+    let (narrow, _) = render(&composer, /*width*/ 37, /*footer*/ None);
+    let row = narrow.lines().rev().nth(1).expect("persistent status row");
+    insta::assert_snapshot!(strip_osc8(row).trim(), @"project · PR #42 · rev… Plan mode");
+    composer.set_active_agent_label(/*active_agent_label*/ None);
 
     composer.set_task_running(/*running*/ true);
     let (running, _) = render(&composer, /*width*/ 100, /*footer*/ None);

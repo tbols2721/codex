@@ -71,6 +71,33 @@ Promotion saves a backup source tag, pushes the changes to your fork, and select
 the tested custom package. Restart `codexJoe` to use that package in a new session.
 The existing running session keeps its current executable.
 
+## Moving between machines
+
+The source and Git history were copied from `homeSpark1` to this machine on
+November 9, 2026. The upstream base is recorded in `.statusline-upstream.json`.
+The custom build keeps explicit rows with the native and extension renderers,
+including pull-request links and empty rows.
+
+Compiled packages are specific to the processor architecture. Build a new
+package on an x86-64 machine instead of copying the ARM64 executable from
+`homeSpark1`. Verification uses the matching official package already installed
+on the destination. The official `codex` command remains separate.
+
+The destination's custom profile contains the three status-line rows imported
+from `homeSpark1`. It inherits the destination's other settings and saved login.
+The main configuration file is preserved. Future changes to either machine's
+profile are local; copying the repository does not synchronize settings.
+
+Building requires Rust, a C/C++ compiler, and the development libraries required
+by the selected release. The native UI test also requires `tmux`. On this
+machine, Rust 1.97.1 is installed under `~/.cargo` and `~/.rustup`; the local
+`tmux` command uses its package under `~/.local/lib/codex-statusline-tools`.
+Run `. "$HOME/.cargo/env"` if a shell cannot find `cargo`. Cargo uses Git's CLI
+for dependency downloads on this machine.
+
+Source updates are pushed to the fork. A checkout and running package on
+`homeSpark1` stay at their previous versions until that machine is updated.
+
 ## Return to the previous build
 
 ```sh

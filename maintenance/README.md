@@ -83,3 +83,9 @@ defaults if the home directory differs. No extra worktree is needed. Build
 outputs and verification receipts are local, so run verification again after
 recovery. Keep personal configuration and login backups separate from this
 public Git fork.
+
+Packages and verification receipts are specific to a machine and architecture.
+For a move from ARM64 to x86-64, retain the source history and build again with
+the destination's matching official helpers. Do not copy the ARM64 launcher
+target, installation state, or old receipt into an x86-64 installation. Install
+Rust and `tmux` before running `verify`; load `~/.cargo/env` when needed.

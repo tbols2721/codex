@@ -249,7 +249,7 @@ def verify(args):
         raise Stop("The official package is missing its matching code-mode host.")
     cargo = ["cargo", f"+{args.toolchain}"]
     git(candidate, "diff", "--check", f"{base['commit']}..HEAD", "--", ".", ":(exclude)**/*.snap")
-    for test_filter in ("status_line", "status_surface::tests", "multi_select_picker::tests", "bottom_pane::footer::tests", "footer_state::tests"):
+    for test_filter in ("status_line", "status_surface::tests", "multi_select_picker::tests", "bottom_pane::footer::tests", "footer_content::tests", "footer_state::tests"):
         run(*cargo, "test", "--quiet", "-p", "codex-tui", "--lib", test_filter,
             "--locked", "--target-dir", args.target, cwd=candidate / "codex-rs")
     run(*cargo, "build", "--quiet", "-p", "codex-cli", "--bin", "codex", "--locked",

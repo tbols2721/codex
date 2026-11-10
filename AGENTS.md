@@ -64,7 +64,8 @@ needed; do not copy a stale layout from these notes over it.
 The launcher defaults runtime commands to `statusline-trial`. Plain TUI,
 `resume`, and `fork` use `--no-daemon`, so the custom session runs locally.
 An explicit `--profile` takes precedence. Explicit remote sessions retain native
-remote behavior. `agents` requires a daemon and must not get `--no-daemon`.
+remote behavior. From 0.167.0, `agents` also accepts an explicit `--no-daemon`;
+the launcher preserves its native default unless that flag is supplied.
 Utility commands, such as `debug models`, `login`, and `completion`, do not
 accept the same runtime flags. Preserve the launcher's command routing.
 `codexJoe update` checks releases through the custom maintenance tool; it does
@@ -139,10 +140,17 @@ The build cache is `/tmp/codex-multiline-target`. Recheck the upstream toolchain
 on later releases. Do not change the official release version to a custom name.
 
 Relevant Rust filters include `status_line`, `status_surface::tests`,
-`multi_select_picker::tests`, `bottom_pane::footer::tests`, and
+`multi_select_picker::tests`, `bottom_pane::footer::tests`, `footer_content::tests`, and
 `footer_state::tests`. The last filter covers the warning geometry regression.
 Snapshot files contain intentional cell padding; exclude `*.snap` from
 `git diff --check`. Keep nested module `AGENTS.md` instructions in scope.
+
+From 0.167.0, footer content carries hyperlink annotations and can use the
+extension renderer. Keep explicit row boundaries through `FooterContent`,
+including empty rows, per-row truncation, preview height, and link offsets.
+Do not restore the old underline-scanning hyperlink helper. The regression
+`status_line_rows_keep_pr_links_after_empty_rows_and_resize` covers both
+renderers and both composer layouts.
 
 The model UI smoke test uses a disposable trusted profile and private tmux
 server. It checks explicit rows at different terminal sizes, `/statusline`
