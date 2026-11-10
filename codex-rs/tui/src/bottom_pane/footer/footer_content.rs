@@ -94,7 +94,7 @@ impl FooterContent {
             content => {
                 let line = content.into_hyperlink_line();
                 let mut offset = 0;
-                let newline_width = HyperlinkLine::from("\n").source_width();
+                let newline_width = crate::width::display_width("\n");
                 split_line_at_newlines(line.line)
                     .into_iter()
                     .map(|text| {
