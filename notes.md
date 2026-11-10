@@ -87,6 +87,13 @@ The destination's custom profile contains the three status-line rows imported
 from `homeSpark1`. It inherits the destination's other settings and saved login.
 The main configuration file is preserved. Future changes to either machine's
 profile are local; copying the repository does not synchronize settings.
+The custom profile also trusts this source folder, so `codexJoe` can start here
+without a first-use folder prompt. That trust applies only to this folder.
+
+This is the first custom installation on this x86-64 machine. There is no
+previous local package for `rollback` yet; that option becomes available after
+a later promotion. The backup source tag and the ARM64 installation on
+`homeSpark1` are retained.
 
 Building requires Rust, a C/C++ compiler, and the development libraries required
 by the selected release. The native UI test also requires `tmux`. On this
