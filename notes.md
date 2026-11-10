@@ -51,7 +51,7 @@ When a newer release is available, replace every `X.Y.Z` below with its version.
 3. Build and test the candidate:
 
    ```sh
-   codex-statusline-update verify ~/Research/codex-statusline-updates/X.Y.Z
+   codex-statusline-update verify ~/Research/worktrees/codex-statusline/X.Y.Z
    ```
 
    This uses the installed official package by default. Its version must match
@@ -64,7 +64,7 @@ When a newer release is available, replace every `X.Y.Z` below with its version.
 5. Once you accept the candidate, make it the version that `codexJoe` launches:
 
    ```sh
-   codex-statusline-update promote ~/Research/codex-statusline-updates/X.Y.Z
+   codex-statusline-update promote ~/Research/worktrees/codex-statusline/X.Y.Z
    ```
 
 Promotion saves a backup source tag, pushes the changes to your fork, and selects
@@ -87,8 +87,10 @@ The destination's custom profile contains the three status-line rows imported
 from `homeSpark1`. It inherits the destination's other settings and saved login.
 The main configuration file is preserved. Future changes to either machine's
 profile are local; copying the repository does not synchronize settings.
-The custom profile also trusts this source folder, so `codexJoe` can start here
-without a first-use folder prompt. That trust applies only to this folder.
+The custom profile originally trusted `~/Research/codex-statusline`. After the
+local directory organization, the canonical source path is
+`~/Research/projects/codex-statusline`. The recorded profile-trust update below
+is needed to retain that folder trust at the new canonical path.
 
 This is the first custom installation on this x86-64 machine. There is no
 previous local package for `rollback` yet; that option becomes available after
@@ -144,17 +146,47 @@ plugin files; updates can replace them.
 A private backup of the previous base config is stored beside it as
 `config.toml.before-credit-promo-disable.Z0WWMP`.
 
+## Local directory organization
+
+On November 9, 2026, the local source moved to
+`~/Research/projects/codex-statusline`, and candidate worktrees moved to
+`~/Research/worktrees/codex-statusline/<version>`. The launcher now finds its
+binary and guide relative to its own source checkout. The update command uses
+the new candidate directory by default.
+
+The old `~/Research/codex-statusline` and `~/Research/codex-statusline-updates`
+paths remain compatibility symlinks. The installed command links and existing
+personal configuration can still use those paths. Personal settings, saved
+rows, credentials, receipts, and executable packages were not migrated.
+The existing candidate's source files and receipt were preserved. These
+maintenance changes add a new source commit. Before promoting that older
+candidate, merge `custom-main` into its branch and run verification again.
+The old receipt cannot verify the resulting merge commit.
+
+The organization session could not edit the personal profile outside its
+writable workspace. To transfer the existing folder-trust entry to the new
+canonical location, apply the prepared one-line header change in your terminal:
+
+```sh
+patch --backup --suffix=.before-research-organization \
+  ~/.codex/statusline-trial.config.toml \
+  < ~/Research/reviews/organization-2026-11-09/profile-trust-update.patch
+```
+
+This retains the existing trust value and all other profile settings. Until
+then, a new session in the canonical source folder can ask for folder trust.
+
 ## Where your settings and changes live
 
 | Item | Location |
 | --- | --- |
-| Source and these notes | `~/Research/codex-statusline` |
+| Source and these notes | `~/Research/projects/codex-statusline` |
 | Official base settings | `~/.codex/config.toml` |
 | Custom profile and saved rows | `~/.codex/statusline-trial.config.toml` |
 | Custom executable packages | `~/.local/lib/codex-statusline/` |
 | Update and rollback state | `~/.codex/statusline-maintenance/installation.json` |
-| Maintained scripts | `~/Research/codex-statusline/maintenance/` |
-| Independent reference copy | `~/Research/file.research.d/file.scripts.d/codex-statusline-maintenance/` |
+| Maintained scripts | `~/Research/projects/codex-statusline/maintenance/` |
+| Independent reference copy | `~/Research/notes/file.research.d/file.scripts.d/codex-statusline-maintenance/` |
 
 The fork is [tbols2721/codex](https://github.com/tbols2721/codex).
 `custom-main` is the active branch for both source and maintenance scripts.
@@ -164,7 +196,7 @@ it has no active worktree. Both branches retain their existing protection.
 
 The maintained Codex scripts are an approved exception to the general
 `file.scripts.d` location rule. `codexJoe` and `codex-statusline-update` now
-link to scripts in `~/Research/codex-statusline/maintenance/`. Their commands
+link to scripts in `~/Research/projects/codex-statusline/maintenance/`. Their commands
 and the selected custom binary are unchanged. Commit script and source
 changes, with these notes, on `custom-main`.
 

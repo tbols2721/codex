@@ -21,17 +21,17 @@ checks for releases with this maintenance tool.
 ```sh
 codex-statusline-update check
 codex-statusline-update stage rust-vX.Y.Z
-codex-statusline-update verify ~/Research/codex-statusline-updates/X.Y.Z \
+codex-statusline-update verify ~/Research/worktrees/codex-statusline/X.Y.Z \
   --official-package /path/to/official/X.Y.Z/package
 # Run the printed candidate command and check the result before promotion.
-codex-statusline-update promote ~/Research/codex-statusline-updates/X.Y.Z
+codex-statusline-update promote ~/Research/worktrees/codex-statusline/X.Y.Z
 codex-statusline-update rollback
 ```
 
 Global path/toolchain options must precede the command. For example:
 
 ```sh
-codex-statusline-update --toolchain 1.97.1 verify ~/Research/codex-statusline
+codex-statusline-update --toolchain 1.97.1 verify ~/Research/projects/codex-statusline
 ```
 
 `verify` requires a complete matching official package: `bin/codex`,
@@ -72,11 +72,11 @@ PR or external CI.
 To restore the tools on a new machine:
 
 ```sh
-git clone --branch custom-main https://github.com/tbols2721/codex.git ~/Research/codex-statusline
-git -C ~/Research/codex-statusline remote add upstream https://github.com/openai/codex.git
+git clone --branch custom-main https://github.com/tbols2721/codex.git ~/Research/projects/codex-statusline
+git -C ~/Research/projects/codex-statusline remote add upstream https://github.com/openai/codex.git
 mkdir -p ~/.local/bin
-ln -s ~/Research/codex-statusline/maintenance/codexJoe.py ~/.local/bin/codexJoe
-ln -s ~/Research/codex-statusline/maintenance/update.py ~/.local/bin/codex-statusline-update
+ln -s ~/Research/projects/codex-statusline/maintenance/codexJoe.py ~/.local/bin/codexJoe
+ln -s ~/Research/projects/codex-statusline/maintenance/update.py ~/.local/bin/codex-statusline-update
 ```
 
 Create the links only when those command paths are unused. Adapt the script

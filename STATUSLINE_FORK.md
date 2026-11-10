@@ -14,13 +14,13 @@ release version; `0.0.0` can change model access and credential-store behavior.
 
 ## Local files
 
-- Source: `/home/jbrennan/Research/codex-statusline`
-- Maintained scripts: `/home/jbrennan/Research/codex-statusline/maintenance`
+- Source: `/home/jbrennan/Research/projects/codex-statusline`
+- Maintained scripts: `/home/jbrennan/Research/projects/codex-statusline/maintenance`
 - Source and script branch: `custom-main`
 - Historical script branch: `statusline-maintenance` (history imported into
   `maintenance/`; no active worktree)
 - Independent reference copy:
-  `/home/jbrennan/Research/file.research.d/file.scripts.d/codex-statusline-maintenance`
+  `/home/jbrennan/Research/notes/file.research.d/file.scripts.d/codex-statusline-maintenance`
 
 The user approved an exception to the general script-location rule for
 these maintained fork scripts. Commit them with source and notes on
@@ -58,7 +58,7 @@ this checkout. Run `codex-statusline-update --help` for commands and options.
 
 1. Run `check` to read the latest stable OpenAI release.
 2. Run `stage rust-vX.Y.Z` to merge that exact release into a new branch and
-   checkout under `~/Research/codex-statusline-updates/`. This retains the custom
+   checkout under `~/Research/worktrees/codex-statusline/`. This retains the custom
    commits and their history. It does not rebase or force-push `custom-main`.
 3. If Git reports a conflict, resolve it in the candidate checkout. Inspect
    every resolution, regenerate workspace package versions in `Cargo.lock`,

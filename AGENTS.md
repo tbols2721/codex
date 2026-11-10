@@ -4,7 +4,7 @@
 
 - Write clear, direct English, about 80% of the way to ASD-STE100.
 - General rule: save scripts under
-  `/home/jbrennan/Research/file.research.d/file.scripts.d/`.
+  `/home/jbrennan/Research/notes/file.research.d/file.scripts.d/`.
 - User-approved exception (November 3, 2026): maintain Codex fork scripts
   in this checkout under `maintenance/`, on `custom-main`. The copy under
   `file.scripts.d/codex-statusline-maintenance` is an independent reference
@@ -48,12 +48,12 @@ needed; do not copy a stale layout from these notes over it.
 - `codexJoe`: custom launcher on PATH at `~/.local/bin/codexJoe`. Its script is
   `maintenance/codexJoe.py` in this checkout. It starts in the caller's cwd.
 - `codex-statusline-update`: the maintenance `update.py` command on PATH.
-- Source: `/home/jbrennan/Research/codex-statusline`.
+- Source: `/home/jbrennan/Research/projects/codex-statusline`.
 - Reference only: `/home/jbrennan/Git/openai-codex`.
-- Maintained scripts: `/home/jbrennan/Research/codex-statusline/maintenance`.
+- Maintained scripts: `/home/jbrennan/Research/projects/codex-statusline/maintenance`.
 - Independent reference snapshot:
-  `/home/jbrennan/Research/file.research.d/file.scripts.d/codex-statusline-maintenance`.
-- Candidate worktrees: `~/Research/codex-statusline-updates/<version>`.
+  `/home/jbrennan/Research/notes/file.research.d/file.scripts.d/codex-statusline-maintenance`.
+- Candidate worktrees: `~/Research/worktrees/codex-statusline/<version>`.
 - Custom packages: `~/.local/lib/codex-statusline/<version>-<commit>-<id>`.
 - Promoted binary selector: this checkout's `bin/codex-statusline` symlink.
 - Active base config: `~/.codex/config.toml`.

@@ -399,8 +399,8 @@ def rollback(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", type=Path, default=Path("/home/jbrennan/Research/codex-statusline"))
-    parser.add_argument("--updates", type=Path, default=Path("/home/jbrennan/Research/codex-statusline-updates"))
+    parser.add_argument("--source", type=Path, default=SCRIPTS.parent)
+    parser.add_argument("--updates", type=Path, default=Path.home() / "Research/worktrees/codex-statusline")
     parser.add_argument("--state", type=Path, default=Path.home() / ".codex/statusline-maintenance")
     parser.add_argument("--packages", type=Path, default=Path.home() / ".local/lib/codex-statusline")
     parser.add_argument("--target", type=Path, default=Path("/tmp/codex-multiline-target"))

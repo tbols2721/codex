@@ -6,10 +6,11 @@ from pathlib import Path
 import sys
 
 
-BINARY = Path("/home/jbrennan/Research/codex-statusline/bin/codex-statusline")
-PROFILE = "statusline-trial"
 SCRIPTS = Path(__file__).resolve().parent
-GUIDE = Path("/home/jbrennan/Research/codex-statusline/STATUSLINE_FORK.md")
+SOURCE = SCRIPTS.parent
+BINARY = SOURCE / "bin/codex-statusline"
+PROFILE = "statusline-trial"
+GUIDE = SOURCE / "STATUSLINE_FORK.md"
 
 # Match the root CLI and profile_v2_for_subcommand in the pinned release.
 # Review these sets when the upstream CLI adds commands or root value options.

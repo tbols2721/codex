@@ -1,9 +1,9 @@
 # Codex status-line maintenance handoff
 
-Read `/home/jbrennan/Research/codex-statusline/AGENTS.md` first. It holds the
+Read `/home/jbrennan/Research/projects/codex-statusline/AGENTS.md` first. It holds the
 project history, user requirements, paths, and update policy. Then read this
 worktree's `README.md` and the source checkout's `STATUSLINE_FORK.md`.
-Read and maintain `/home/jbrennan/Research/codex-statusline/notes.md` when script
+Read and maintain `/home/jbrennan/Research/projects/codex-statusline/notes.md` when script
 changes affect commands, configuration, update steps, or recovery information
 Joe needs. Commit those user-facing notes in the source worktree.
 
