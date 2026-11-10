@@ -4,7 +4,7 @@
 
 - Write clear, direct English, about 80% of the way to ASD-STE100.
 - General rule: save scripts under
-  `/home/jbrennan/Research/notes/file.research.d/file.scripts.d/`.
+  `/home/jbrennan/Research/research/file.research.d/file.scripts.d/`.
 - User-approved exception (November 3, 2026): maintain Codex fork scripts
   in this checkout under `maintenance/`, on `custom-main`. The copy under
   `file.scripts.d/codex-statusline-maintenance` is an independent reference
@@ -45,15 +45,16 @@ needed; do not copy a stale layout from these notes over it.
 ## Commands and paths
 
 - `codex`: official CLI, linked through `~/.codex/packages/standalone/current`.
-- `codexJoe`: custom launcher on PATH at `~/.local/bin/codexJoe`. Its script is
-  `maintenance/codexJoe.py` in this checkout. It starts in the caller's cwd.
+- `codexJoe`: custom launcher on PATH at `~/.local/bin/codexJoe`. It runs an installed copy of
+  `maintenance/codexJoe.py` from `~/.local/share/codex-statusline/maintenance`.
+  It reads the selected package from installation state and preserves caller cwd.
 - `codex-statusline-update`: the maintenance `update.py` command on PATH.
-- Source: `/home/jbrennan/Research/projects/codex-statusline`.
+- Source: `/home/jbrennan/Research/public-git/codex-statusline`.
 - Reference only: `/home/jbrennan/Git/openai-codex`.
-- Maintained scripts: `/home/jbrennan/Research/projects/codex-statusline/maintenance`.
+- Maintained scripts: `/home/jbrennan/Research/public-git/codex-statusline/maintenance`.
 - Independent reference snapshot:
-  `/home/jbrennan/Research/notes/file.research.d/file.scripts.d/codex-statusline-maintenance`.
-- Candidate worktrees: `~/Research/worktrees/codex-statusline/<version>`.
+  `/home/jbrennan/Research/research/file.research.d/file.scripts.d/codex-statusline-maintenance`.
+- Independent candidate clones: `~/Research/worktrees/codex-statusline/<version>`.
 - Custom packages: `~/.local/lib/codex-statusline/<version>-<commit>-<id>`.
 - Promoted binary selector: this checkout's `bin/codex-statusline` symlink.
 - Active base config: `~/.codex/config.toml`.
@@ -123,7 +124,7 @@ Read `STATUSLINE_FORK.md` and `maintenance/README.md` before an update.
 `maintenance/AGENTS.md` explains script changes and verification details.
 
 Use an exact stable release tag. `update.py stage` merges it into a candidate
-branch and worktree. Conflicts require inspection and a manual resolution in
+branch and independent clone. Conflicts require inspection and a manual resolution in
 the candidate; leave the working build in place. Regenerate the internal
 workspace package versions in `Cargo.lock` for the selected release.
 
@@ -183,3 +184,11 @@ The user requested research on official contribution requirements after local
 acceptance. That report was paused for the model failure. No upstream issue,
 PR, or comment has been published. Check current official requirements before
 reporting, and get explicit authorization before publishing anything.
+
+## Installed commands
+
+Run `python3 maintenance/install_commands.py` after changing maintained command
+scripts. The installer writes regular launchers and copies the scripts into
+`~/.local/share/codex-statusline`. Do not add workspace aliases or command
+symlinks. The existing binary selector used by promotion is package plumbing;
+it is not an installed-command dependency on the source checkout.

@@ -87,10 +87,9 @@ The destination's custom profile contains the three status-line rows imported
 from `homeSpark1`. It inherits the destination's other settings and saved login.
 The main configuration file is preserved. Future changes to either machine's
 profile are local; copying the repository does not synchronize settings.
-The custom profile originally trusted `~/Research/codex-statusline`. After the
-local directory organization, the canonical source path is
-`~/Research/projects/codex-statusline`. The recorded profile-trust update below
-is needed to retain that folder trust at the new canonical path.
+The custom profile trusts the source folder at
+`~/Research/public-git/codex-statusline`. Its folder-trust key was migrated
+with the directory move; the remaining profile values were preserved.
 
 This is the first custom installation on this x86-64 machine. There is no
 previous local package for `rollback` yet; that option becomes available after
@@ -148,45 +147,46 @@ A private backup of the previous base config is stored beside it as
 
 ## Local directory organization
 
-On November 9, 2026, the local source moved to
-`~/Research/projects/codex-statusline`, and candidate worktrees moved to
-`~/Research/worktrees/codex-statusline/<version>`. The launcher now finds its
-binary and guide relative to its own source checkout. The update command uses
-the new candidate directory by default.
+The workspace now uses three real directories: `~/Research/research`,
+`~/Research/public-git`, and `~/Research/private-git`. This fork is in
+`~/Research/public-git/codex-statusline`. Update candidates are under
+`~/Research/public-git/codex-statusline-updates/<version>`.
 
-The old `~/Research/codex-statusline` and `~/Research/codex-statusline-updates`
-paths remain compatibility symlinks. The installed command links and existing
-personal configuration can still use those paths. Personal settings, saved
-rows, credentials, receipts, and executable packages were not migrated.
-The existing candidate's source files and receipt were preserved. These
-maintenance changes add a new source commit. Before promoting that older
-candidate, merge `custom-main` into its branch and run verification again.
-The old receipt cannot verify the resulting merge commit.
-
-The organization session could not edit the personal profile outside its
-writable workspace. To transfer the existing folder-trust entry to the new
-canonical location, apply the prepared one-line header change in your terminal:
+The command files in `~/.local/bin` are regular launchers. They run installed
+maintenance copies in `~/.local/share/codex-statusline/maintenance`. The runtime
+launcher reads the promoted package from
+`~/.codex/statusline-maintenance/installation.json`, so moving a source checkout
+does not break normal `codexJoe` commands. After changing maintained scripts,
+refresh the installed copies with:
 
 ```sh
-patch --backup --suffix=.before-research-organization \
-  ~/.codex/statusline-trial.config.toml \
-  < ~/Research/reviews/organization-2026-11-09/profile-trust-update.patch
+python3 maintenance/install_commands.py
 ```
 
-This retains the existing trust value and all other profile settings. Until
-then, a new session in the canonical source folder can ask for folder trust.
+Staged update candidates are independent Git clones with their own objects.
+They can move without invalidating a shared worktree pointer. Promotion imports
+the candidate commit into the source repository before checking ancestry and
+pushing it. Use `--source PATH` before the maintenance subcommand if you move
+the source away from its default location.
+
+The existing 0.167.0 candidate was converted to an independent clone without
+changing its commit or source files. Before a future promotion, fetch and merge
+the maintained `custom-main` changes into that candidate and run verification
+again. Its old receipt does not verify a new merge commit. Personal project
+paths were migrated to the new locations; saved rows, credentials, receipts,
+and the running executable package were preserved.
 
 ## Where your settings and changes live
 
 | Item | Location |
 | --- | --- |
-| Source and these notes | `~/Research/projects/codex-statusline` |
+| Source and these notes | `~/Research/public-git/codex-statusline` |
 | Official base settings | `~/.codex/config.toml` |
 | Custom profile and saved rows | `~/.codex/statusline-trial.config.toml` |
 | Custom executable packages | `~/.local/lib/codex-statusline/` |
 | Update and rollback state | `~/.codex/statusline-maintenance/installation.json` |
-| Maintained scripts | `~/Research/projects/codex-statusline/maintenance/` |
-| Independent reference copy | `~/Research/notes/file.research.d/file.scripts.d/codex-statusline-maintenance/` |
+| Maintained scripts | `~/Research/public-git/codex-statusline/maintenance/` |
+| Independent reference copy | `~/Research/research/file.research.d/file.scripts.d/codex-statusline-maintenance/` |
 
 The fork is [tbols2721/codex](https://github.com/tbols2721/codex).
 `custom-main` is the active branch for both source and maintenance scripts.
@@ -194,11 +194,11 @@ On November 3, 2026, the maintenance branch history was imported into
 `maintenance/`. The old `statusline-maintenance` branch remains as history;
 it has no active worktree. Both branches retain their existing protection.
 
-The maintained Codex scripts are an approved exception to the general
-`file.scripts.d` location rule. `codexJoe` and `codex-statusline-update` now
-link to scripts in `~/Research/projects/codex-statusline/maintenance/`. Their commands
-and the selected custom binary are unchanged. Commit script and source
-changes, with these notes, on `custom-main`.
+The maintained Codex scripts are an approved exception to the general script
+location rule. Their source stays in this repository. Installed commands use
+independent copies under `~/.local/share/codex-statusline`; refresh them with
+`python3 maintenance/install_commands.py` after a script change. Commit script
+and source changes, with these notes, on `custom-main`.
 
 The reference copy under `file.scripts.d` contains ordinary files. It has no
 `.git` file, symlinks, or automatic sync. The commands do not use it. Do not

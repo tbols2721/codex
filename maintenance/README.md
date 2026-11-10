@@ -11,9 +11,10 @@ branch is retained as history and has no active worktree. The copy under
 snapshot: ordinary files, no `.git`, symlinks, or automatic sync. Installed
 commands do not use the snapshot.
 
-The local command `codex-statusline-update` links to `update.py` here.
-The local command `codexJoe` links to `codexJoe.py` here. It follows the
-promoted custom binary, uses the saved trial profile for runtime commands,
+The regular commands `codex-statusline-update` and `codexJoe` run installed
+maintenance copies under `~/.local/share/codex-statusline/maintenance`. The
+launcher reads the promoted package from installation state and uses the saved
+trial profile for runtime commands,
 and starts in the caller's current directory. An explicit `--profile` overrides
 the default. `codex` continues to select the official CLI. `codexJoe update`
 checks for releases with this maintenance tool.
@@ -31,7 +32,7 @@ codex-statusline-update rollback
 Global path/toolchain options must precede the command. For example:
 
 ```sh
-codex-statusline-update --toolchain 1.97.1 verify ~/Research/projects/codex-statusline
+codex-statusline-update --toolchain 1.97.1 verify ~/Research/public-git/codex-statusline
 ```
 
 `verify` requires a complete matching official package: `bin/codex`,
@@ -51,7 +52,7 @@ The first promotion preserves the existing trial binary and its matching
 official resources. A journal makes an interrupted executable/state switch
 recoverable on the next update command.
 
-On a Git conflict, resolve it in the candidate checkout. Check the selected
+On a Git conflict, resolve it in the candidate clone. Check the selected
 release's workspace version, regenerate the workspace lockfile entries, update
 `.statusline-upstream.json` with the printed release tag and commit, and commit
 the merge. Re-run `verify` after every source change. A changed candidate commit
@@ -72,15 +73,14 @@ PR or external CI.
 To restore the tools on a new machine:
 
 ```sh
-git clone --branch custom-main https://github.com/tbols2721/codex.git ~/Research/projects/codex-statusline
-git -C ~/Research/projects/codex-statusline remote add upstream https://github.com/openai/codex.git
-mkdir -p ~/.local/bin
-ln -s ~/Research/projects/codex-statusline/maintenance/codexJoe.py ~/.local/bin/codexJoe
-ln -s ~/Research/projects/codex-statusline/maintenance/update.py ~/.local/bin/codex-statusline-update
+git clone --branch custom-main https://github.com/tbols2721/codex.git ~/Research/public-git/codex-statusline
+git -C ~/Research/public-git/codex-statusline remote add upstream https://github.com/openai/codex.git
+python3 ~/Research/public-git/codex-statusline/maintenance/install_commands.py
 ```
 
-Create the links only when those command paths are unused. Adapt the script
-defaults if the home directory differs. No extra worktree is needed. Build
+The installer writes regular command files and maintenance copies. It does not
+modify the official CLI, personal profiles, or selected executable package.
+Update candidates have their own Git metadata. Build
 outputs and verification receipts are local, so run verification again after
 recovery. Keep personal configuration and login backups separate from this
 public Git fork.

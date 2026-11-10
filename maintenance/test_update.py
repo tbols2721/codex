@@ -139,6 +139,21 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual((self.repo / "bin/codex-statusline").resolve(), old_package / "bin/codex")
         self.assertEqual(update.commit(self.repo), new_head)
 
+    def test_staged_candidate_survives_moving_the_source(self):
+        self.release()
+        self.stage()
+        candidate = self.args.candidate
+        expected = update.commit(candidate)
+        self.assertTrue((candidate / ".git").is_dir())
+        self.assertFalse((candidate / ".git/objects/info/alternates").exists())
+        moved = self.root / "source-moved"
+        self.repo.rename(moved)
+        try:
+            self.assertEqual(update.commit(candidate), expected)
+            self.assertEqual(update.git(candidate, "status", "--porcelain", capture=True), "")
+        finally:
+            moved.rename(self.repo)
+
     def test_conflict_leaves_main_and_existing_binary_untouched(self):
         self.release(conflict=True)
         with self.assertRaises(update.Stop):

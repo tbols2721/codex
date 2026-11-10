@@ -14,13 +14,13 @@ release version; `0.0.0` can change model access and credential-store behavior.
 
 ## Local files
 
-- Source: `/home/jbrennan/Research/projects/codex-statusline`
-- Maintained scripts: `/home/jbrennan/Research/projects/codex-statusline/maintenance`
+- Source: `/home/jbrennan/Research/public-git/codex-statusline`
+- Maintained scripts: `/home/jbrennan/Research/public-git/codex-statusline/maintenance`
 - Source and script branch: `custom-main`
 - Historical script branch: `statusline-maintenance` (history imported into
   `maintenance/`; no active worktree)
 - Independent reference copy:
-  `/home/jbrennan/Research/notes/file.research.d/file.scripts.d/codex-statusline-maintenance`
+  `/home/jbrennan/Research/research/file.research.d/file.scripts.d/codex-statusline-maintenance`
 
 The user approved an exception to the general script-location rule for
 these maintained fork scripts. Commit them with source and notes on
@@ -53,12 +53,11 @@ Future sessions should read this checkout's `AGENTS.md`. A short pointer in
 
 ## Update procedure
 
-Use `codex-statusline-update`, which links to `maintenance/update.py` in
-this checkout. Run `codex-statusline-update --help` for commands and options.
+Use `codex-statusline-update`, which runs an installed copy of `maintenance/update.py`. Run `codex-statusline-update --help` for commands and options.
 
 1. Run `check` to read the latest stable OpenAI release.
 2. Run `stage rust-vX.Y.Z` to merge that exact release into a new branch and
-   checkout under `~/Research/worktrees/codex-statusline/`. This retains the custom
+   independent clone under `~/Research/worktrees/codex-statusline/`. This retains the custom
    commits and their history. It does not rebase or force-push `custom-main`.
 3. If Git reports a conflict, resolve it in the candidate checkout. Inspect
    every resolution, regenerate workspace package versions in `Cargo.lock`,
@@ -88,7 +87,7 @@ normally. Backup tags preserve the source before each promotion. Avoid resetting
 or force-pushing `custom-main`.
 
 To recover source and scripts on another machine, clone this fork on
-`custom-main`. Both are included in that checkout. Follow
-`maintenance/README.md` to create the command links. Adapt the script
+`custom-main`. Both are included in that checkout. Run `python3 maintenance/install_commands.py` to install the regular command
+files and independent maintenance copies. Adapt the script
 defaults for a different home directory. Keep the matching official package
 available for build verification. Do not restore the old maintenance worktree.

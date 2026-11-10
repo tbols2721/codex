@@ -1,9 +1,9 @@
 # Codex status-line maintenance handoff
 
-Read `/home/jbrennan/Research/projects/codex-statusline/AGENTS.md` first. It holds the
+Read `/home/jbrennan/Research/public-git/codex-statusline/AGENTS.md` first. It holds the
 project history, user requirements, paths, and update policy. Then read this
 worktree's `README.md` and the source checkout's `STATUSLINE_FORK.md`.
-Read and maintain `/home/jbrennan/Research/projects/codex-statusline/notes.md` when script
+Read and maintain `/home/jbrennan/Research/public-git/codex-statusline/notes.md` when script
 changes affect commands, configuration, update steps, or recovery information
 Joe needs. Commit those user-facing notes in the source worktree.
 
@@ -20,12 +20,13 @@ snapshot. Do not develop or run maintenance there, create command links to
 it, or add automatic synchronization.
 
 - `codexJoe.py`: PATH launcher. Preserve caller cwd, argv, environment, explicit
-  profile selection, and subcommand-aware defaults. It follows the promoted
-  binary symlink so promotion and rollback also change what `codexJoe` runs.
+  profile selection, and subcommand-aware defaults. It reads the promoted
+  package from installation state so its installed copy works without the source
+  checkout. Refresh installed copies with `install_commands.py` after edits.
 - `update.py`: exact-release staging, verification, promotion, and rollback.
   Resolve path arguments; leave conflicts in the candidate; preserve Git
   history; push the selected release tag with the source and backup tags.
-- `test_update.py`: temporary local Git repositories. It checks history,
+- `test_update.py`: temporary local Git repositories, including independently movable candidates. It checks history,
   conflicts, stale receipts, package integrity, first adoption, failed switches,
   interrupted switches, and rollback. It does not use the real fork.
 - `verify_codex_statusline_runtime.py`: matching official/custom versions and

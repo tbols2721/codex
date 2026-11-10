@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Launch the promoted Codex fork with Joe's runtime profile and caller's cwd."""
 
+import json
 import os
 from pathlib import Path
 import sys
@@ -90,11 +91,20 @@ def main():
             print("codexJoe update accepts no arguments except --help.", file=sys.stderr)
             return 2
         os.execv(sys.executable, [sys.executable, str(SCRIPTS / "update.py"), "check"])
-    if not BINARY.is_file() or not os.access(BINARY, os.X_OK):
-        print(f"The promoted custom binary is unavailable: {BINARY}", file=sys.stderr)
+    state_path = Path.home() / ".codex/statusline-maintenance/installation.json"
+    binary = BINARY
+    if state_path.is_file():
+        try:
+            state = json.loads(state_path.read_text())
+            binary = Path(state["current"]) / "bin/codex"
+        except (OSError, ValueError, KeyError) as error:
+            print(f"Cannot read the custom installation state: {error}", file=sys.stderr)
+            return 1
+    if not binary.is_file() or not os.access(binary, os.X_OK):
+        print(f"The promoted custom binary is unavailable: {binary}", file=sys.stderr)
         return 1
     # Do not chdir, replace CODEX_HOME, or change the caller's credential environment.
-    os.execv(str(BINARY), [str(BINARY), *launch_arguments(arguments)])
+    os.execv(str(binary), [str(binary), *launch_arguments(arguments)])
 
 
 if __name__ == "__main__":

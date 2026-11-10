@@ -214,7 +214,16 @@ def stage(args):
     candidate = args.updates / version
     candidate.parent.mkdir(parents=True, exist_ok=True)
     branch = f"update/statusline-{version}"
-    git(args.source, "worktree", "add", "-b", branch, candidate, BRANCH)
+    run("git", "clone", "--quiet", "--no-hardlinks", "--no-checkout", args.source, candidate)
+    git(candidate, "remote", "set-url", "origin",
+        git(args.source, "remote", "get-url", "origin", capture=True))
+    git(candidate, "remote", "add", "upstream",
+        git(args.source, "remote", "get-url", "upstream", capture=True))
+    for key in ("user.name", "user.email"):
+        value = git(args.source, "config", "--get", key, capture=True, check=False)
+        if value:
+            git(candidate, "config", key, value)
+    git(candidate, "switch", "--quiet", "--no-track", "-c", branch, f"origin/{BRANCH}")
     print(f"Candidate: {candidate}", flush=True)
     merge = git(candidate, "merge", "--no-ff", "--no-commit", args.tag, check=False)
     if merge.returncode:
@@ -359,6 +368,7 @@ def promote(args):
             old_state = state.copy()
             old = state["current"]
             old_restore = Path(old) / "bin/codex"
+    git(args.source, "fetch", "--quiet", "--no-tags", candidate, commit(candidate))
     git(args.source, "merge-base", "--is-ancestor", "HEAD", commit(candidate))
     previous = commit(args.source)
     tag = f"statusline-before-{dt.datetime.now(dt.timezone.utc):%Y%m%dT%H%M%SZ}-{previous[:12]}"
@@ -399,8 +409,8 @@ def rollback(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", type=Path, default=SCRIPTS.parent)
-    parser.add_argument("--updates", type=Path, default=Path.home() / "Research/worktrees/codex-statusline")
+    parser.add_argument("--source", type=Path, default=(SCRIPTS.parent if (SCRIPTS.parent / METADATA).is_file() else Path.home() / "Research/public-git/codex-statusline"))
+    parser.add_argument("--updates", type=Path, default=Path.home() / "Research/public-git/codex-statusline-updates")
     parser.add_argument("--state", type=Path, default=Path.home() / ".codex/statusline-maintenance")
     parser.add_argument("--packages", type=Path, default=Path.home() / ".local/lib/codex-statusline")
     parser.add_argument("--target", type=Path, default=Path("/tmp/codex-multiline-target"))
