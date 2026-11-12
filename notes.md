@@ -73,38 +73,26 @@ The existing running session keeps its current executable.
 
 ## Moving between machines
 
-The source and Git history were copied from `homeSpark1` to this machine on
-November 9, 2026. The upstream base is recorded in `.statusline-upstream.json`.
-The custom build keeps explicit rows with the native and extension renderers,
-including pull-request links and empty rows.
+The upstream base is recorded in `.statusline-upstream.json`. The custom build
+keeps explicit rows with the native and extension renderers, including
+pull-request links and empty rows.
 
-Compiled packages are specific to the processor architecture. Build a new
-package on an x86-64 machine instead of copying the ARM64 executable from
-`homeSpark1`. Verification uses the matching official package already installed
-on the destination. The official `codex` command remains separate.
+Compiled packages are specific to the processor architecture. Build again on
+the destination with its matching official package. Keep its saved login and
+personal settings local. Copying this repository does not synchronize profiles,
+folder trust, compiled packages, or installation state.
 
-The destination's custom profile contains the three status-line rows imported
-from `homeSpark1`. It inherits the destination's other settings and saved login.
-The main configuration file is preserved. Future changes to either machine's
-profile are local; copying the repository does not synchronize settings.
-The custom profile trusts the source folder at
-`~/Research/public-git/codex-statusline`. Its folder-trust key was migrated
-with the directory move; the remaining profile values were preserved.
-
-This is the first custom installation on this x86-64 machine. There is no
-previous local package for `rollback` yet; that option becomes available after
-a later promotion. The backup source tag and the ARM64 installation on
-`homeSpark1` are retained.
+A first custom installation has no previous package for `rollback`. A later
+promotion retains the old local package. Check the local installation state
+before using recovery commands; another machine can have a different version.
 
 Building requires Rust, a C/C++ compiler, and the development libraries required
-by the selected release. The native UI test also requires `tmux`. On this
-machine, Rust 1.97.1 is installed under `~/.cargo` and `~/.rustup`; the local
-`tmux` command uses its package under `~/.local/lib/codex-statusline-tools`.
-Run `. "$HOME/.cargo/env"` if a shell cannot find `cargo`. Cargo uses Git's CLI
-for dependency downloads on this machine.
+by the selected release. The native UI test also requires `tmux`. The tested
+Rust toolchain is 1.97.1. Run `. "$HOME/.cargo/env"` if a shell cannot find
+`cargo`.
 
-Source updates are pushed to the fork. A checkout and running package on
-`homeSpark1` stay at their previous versions until that machine is updated.
+Source updates are pushed to the fork. Other checkouts and running packages
+stay at their previous versions until those machines are updated.
 
 ## Return to the previous build
 
@@ -147,10 +135,11 @@ A private backup of the previous base config is stored beside it as
 
 ## Local directory organization
 
-The workspace now uses three real directories: `~/Research/research`,
-`~/Research/public-git`, and `~/Research/private-git`. This fork is in
-`~/Research/public-git/codex-statusline`. Update candidates are under
-`~/Research/public-git/codex-statusline-updates/<version>`.
+This checkout is in `~/Research/file.private-repos/codex-statusline`.
+Update candidates are independent clones under
+`~/Research/worktrees/codex-statusline/<version>`. The maintenance defaults and
+commands in these notes use those paths. Use `--source PATH` before a
+maintenance subcommand when the source is elsewhere.
 
 The command files in `~/.local/bin` are regular launchers. They run installed
 maintenance copies in `~/.local/share/codex-statusline/maintenance`. The runtime
@@ -169,24 +158,22 @@ the candidate commit into the source repository before checking ancestry and
 pushing it. Use `--source PATH` before the maintenance subcommand if you move
 the source away from its default location.
 
-The existing 0.167.0 candidate was converted to an independent clone without
-changing its commit or source files. Before a future promotion, fetch and merge
-the maintained `custom-main` changes into that candidate and run verification
-again. Its old receipt does not verify a new merge commit. Personal project
-paths were migrated to the new locations; saved rows, credentials, receipts,
-and the running executable package were preserved.
+A verification receipt applies to one candidate commit and its package files.
+If a candidate receives more source or maintenance changes, run verification
+again before promotion. Keep current and previous packages listed in local
+installation state.
 
 ## Where your settings and changes live
 
 | Item | Location |
 | --- | --- |
-| Source and these notes | `~/Research/public-git/codex-statusline` |
+| Source and these notes | `~/Research/file.private-repos/codex-statusline` |
 | Official base settings | `~/.codex/config.toml` |
 | Custom profile and saved rows | `~/.codex/statusline-trial.config.toml` |
 | Custom executable packages | `~/.local/lib/codex-statusline/` |
 | Update and rollback state | `~/.codex/statusline-maintenance/installation.json` |
-| Maintained scripts | `~/Research/public-git/codex-statusline/maintenance/` |
-| Independent reference copy | `~/Research/research/file.research.d/file.scripts.d/codex-statusline-maintenance/` |
+| Maintained scripts | `~/Research/file.private-repos/codex-statusline/maintenance/` |
+| Independent reference copy | `~/Research/file.research.d/file.scripts.d/codex-statusline-maintenance/` |
 
 The fork is [tbols2721/codex](https://github.com/tbols2721/codex).
 `custom-main` is the active branch for both source and maintenance scripts.

@@ -14,13 +14,13 @@ release version; `0.0.0` can change model access and credential-store behavior.
 
 ## Local files
 
-- Source: `/home/jbrennan/Research/public-git/codex-statusline`
-- Maintained scripts: `/home/jbrennan/Research/public-git/codex-statusline/maintenance`
+- Source: `/home/jbrennan/Research/file.private-repos/codex-statusline`
+- Maintained scripts: `/home/jbrennan/Research/file.private-repos/codex-statusline/maintenance`
 - Source and script branch: `custom-main`
 - Historical script branch: `statusline-maintenance` (history imported into
   `maintenance/`; no active worktree)
 - Independent reference copy:
-  `/home/jbrennan/Research/research/file.research.d/file.scripts.d/codex-statusline-maintenance`
+  `/home/jbrennan/Research/file.research.d/file.scripts.d/codex-statusline-maintenance`
 
 The user approved an exception to the general script-location rule for
 these maintained fork scripts. Commit them with source and notes on

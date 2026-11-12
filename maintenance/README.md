@@ -32,7 +32,7 @@ codex-statusline-update rollback
 Global path/toolchain options must precede the command. For example:
 
 ```sh
-codex-statusline-update --toolchain 1.97.1 verify ~/Research/public-git/codex-statusline
+codex-statusline-update --toolchain 1.97.1 verify ~/Research/file.private-repos/codex-statusline
 ```
 
 `verify` requires a complete matching official package: `bin/codex`,
@@ -73,9 +73,9 @@ PR or external CI.
 To restore the tools on a new machine:
 
 ```sh
-git clone --branch custom-main https://github.com/tbols2721/codex.git ~/Research/public-git/codex-statusline
-git -C ~/Research/public-git/codex-statusline remote add upstream https://github.com/openai/codex.git
-python3 ~/Research/public-git/codex-statusline/maintenance/install_commands.py
+git clone --branch custom-main https://github.com/tbols2721/codex.git ~/Research/file.private-repos/codex-statusline
+git -C ~/Research/file.private-repos/codex-statusline remote add upstream https://github.com/openai/codex.git
+python3 ~/Research/file.private-repos/codex-statusline/maintenance/install_commands.py
 ```
 
 The installer writes regular command files and maintenance copies. It does not
