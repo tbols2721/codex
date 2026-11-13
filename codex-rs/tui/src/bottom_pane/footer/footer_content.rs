@@ -1,32 +1,50 @@
-//! The composer measures the natural width before allocating the left column, then renders
-//! the selected content in the allotted rectangle.
+//! Native and extension status content measured and painted inside the status rectangle.
 
+use crate::line_truncation::line_width;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::Line;
-use ratatui::widgets::Widget;
+use std::sync::Arc;
 
-use crate::line_truncation::truncate_line_with_ellipsis_if_overflow;
+use crate::render::highlight::with_syntax_theme;
 use crate::render::line_utils::split_line_at_newlines;
 use crate::terminal_hyperlinks::HyperlinkLine;
-use crate::ui_tree::UiNode;
+use crate::terminal_hyperlinks::TerminalHyperlink;
+use crate::ui_tree::PreparedUiTree;
+use crate::ui_tree::UiTree;
 
-/// Owned content for the footer's negotiated left-hand area.
+/// Owned status content displayed below the composer.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum FooterContent {
     Line(Line<'static>),
     HyperlinkLine(HyperlinkLine),
-    Extension { content: UiNode },
+    Extension { content: Arc<PreparedUiTree> },
     Rows(Vec<FooterContent>),
 }
 
+impl From<UiTree> for FooterContent {
+    fn from(tree: UiTree) -> Self {
+        Self::Extension {
+            content: Arc::new(tree.prepare()),
+        }
+    }
+}
+
 impl FooterContent {
-    /// Natural display width, before the footer allocates space for the right indicator.
+    pub(crate) fn native_parts(&self) -> Option<(&Line<'static>, &[TerminalHyperlink])> {
+        match self {
+            Self::Line(line) => Some((line, &[])),
+            Self::HyperlinkLine(line) => Some((&line.line, &line.hyperlinks)),
+            Self::Extension { .. } | Self::Rows(_) => None,
+        }
+    }
+
+    /// Natural display width in terminal cells.
     pub(crate) fn width(&self) -> u16 {
         let width = match self {
-            Self::Line(line) => line.width(),
+            Self::Line(line) => line_width(line),
             Self::HyperlinkLine(line) => line.width(),
-            Self::Extension { content } => content.render_line(u16::MAX).width(),
+            Self::Extension { content } => return content.measure_natural().width,
             Self::Rows(rows) => return rows.first().map_or(0, Self::width),
         };
         u16::try_from(width).unwrap_or(u16::MAX)
@@ -40,30 +58,32 @@ impl FooterContent {
                     row.render(Rect::new(area.x, area.y + index as u16, area.width, 1), buf);
                 }
             }
-            Self::Line(line) => Widget::render(line, area, buf),
-            Self::Extension { content } => content.render_line(area.width).render_fitted(area, buf),
-            Self::HyperlinkLine(mut line) => {
+            Self::Extension { content } => {
+                with_syntax_theme(|theme| content.render(area, theme, buf));
+            }
+            native => {
+                let line = native.into_hyperlink_line();
                 let area = Rect {
                     height: area.height.min(1),
                     ..area
                 };
                 let width = usize::from(area.width);
                 if line.width() > width {
-                    line.line = truncate_line_with_ellipsis_if_overflow(line.line, width);
-                    // The ellipsis is never part of the link.
-                    line.clip_hyperlinks_to_width(line.width().saturating_sub(1));
+                    line.render_with_ellipsis(area, buf);
+                } else {
+                    line.render_fitted(area, buf);
                 }
-                line.render_fitted(area, buf);
             }
         }
     }
 
-    /// Keep link destinations when handing the status line to the effort transition.
     pub(crate) fn into_hyperlink_line(self) -> HyperlinkLine {
         match self {
             Self::Line(line) => line.into(),
             Self::HyperlinkLine(line) => line,
-            Self::Extension { content } => content.render_line(u16::MAX),
+            Self::Extension { content } => {
+                with_syntax_theme(|theme| content.render_line(u16::MAX, theme))
+            }
             Self::Rows(rows) => {
                 let mut combined = HyperlinkLine::default();
                 for (index, row) in rows.into_iter().enumerate() {
@@ -86,7 +106,28 @@ impl FooterContent {
         }
     }
 
-    /// Split only explicit row markers, retaining link ranges relative to each row.
+    /// The configured row count, independent of the terminal width.
+    /// Extension trees without explicit row boundaries keep their own measurement.
+    pub(crate) fn explicit_row_count(&self) -> Option<u16> {
+        let count = match self {
+            Self::Rows(rows) => rows
+                .iter()
+                .map(|row| usize::from(row.explicit_row_count().unwrap_or(1)))
+                .sum(),
+            Self::Extension { .. } => return None,
+            native => {
+                let (line, _) = native.native_parts()?;
+                1 + line
+                    .spans
+                    .iter()
+                    .map(|span| span.content.chars().filter(|&ch| ch == '\n').count())
+                    .sum::<usize>()
+            }
+        };
+        Some(u16::try_from(count).unwrap_or(u16::MAX))
+    }
+
+    /// Split explicit row markers and retain link columns relative to each row.
     pub(crate) fn into_rows(self) -> Vec<Self> {
         match self {
             Self::Rows(rows) => rows.into_iter().flat_map(Self::into_rows).collect(),
@@ -110,7 +151,6 @@ impl FooterContent {
                                     .then(|| link.with_columns(start - offset..stop - offset))
                             })
                             .collect();
-                        // Source columns include the marker removed between painted rows.
                         offset = end + newline_width;
                         Self::HyperlinkLine(row)
                     })

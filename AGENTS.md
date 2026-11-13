@@ -146,12 +146,18 @@ Relevant Rust filters include `status_line`, `status_surface::tests`,
 Snapshot files contain intentional cell padding; exclude `*.snap` from
 `git diff --check`. Keep nested module `AGENTS.md` instructions in scope.
 
-From 0.167.0, footer content carries hyperlink annotations and can use the
-extension renderer. Keep explicit row boundaries through `FooterContent`,
-including empty rows, per-row truncation, preview height, and link offsets.
+From 0.169.0, built-in status content uses native rendering; the former
+`StatusLineRenderer` switch and `status_line_content.rs` are removed upstream.
+Extension content uses `Arc<PreparedUiTree>`. Preserve that upstream renderer.
+Keep explicit row boundaries and hyperlink ranges through `FooterContent`,
+including empty rows, independent truncation, preview height, and link offsets.
+`native_status.rs` caches explicit rows instead of wrapping native content.
+The composer row budget can expand for configured rows but still preserves
+input and active hints. Plan mode uses the upstream hint row. Warning notices
+also occupy the hint row and must not change status rectangles or cursor position.
 Do not restore the old underline-scanning hyperlink helper. The regression
-`status_line_rows_keep_pr_links_after_empty_rows_and_resize` covers both
-renderers and both composer layouts.
+`status_line_rows_keep_pr_links_after_empty_rows_and_resize` covers native and
+prepared extension rows in both composer layouts.
 
 The model UI smoke test uses a disposable trusted profile and private tmux
 server. It checks explicit rows at different terminal sizes, `/statusline`

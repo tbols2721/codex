@@ -71,6 +71,18 @@ Promotion saves a backup source tag, pushes the changes to your fork, and select
 the tested custom package. Restart `codexJoe` to use that package in a new session.
 The existing running session keeps its current executable.
 
+## Upstream base: 0.169.0
+
+This source uses [OpenAI release 0.169.0](https://github.com/openai/codex/releases/tag/rust-v0.169.0).
+The built-in status line keeps your explicit rows with the release's new footer
+layout. Each row truncates independently; a narrow terminal does not move fields
+to another row. Empty rows remain in place. Input and active hints take priority
+when the terminal is too short to show all rows.
+
+The release puts the Plan mode indicator in the bottom hint row. The built-in
+status line uses native rendering and supports theme colors. Extension-provided
+status content uses the release's prepared UI renderer.
+
 ## Moving between machines
 
 The upstream base is recorded in `.statusline-upstream.json`. The custom build

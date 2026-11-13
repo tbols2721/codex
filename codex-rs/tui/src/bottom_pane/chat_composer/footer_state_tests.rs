@@ -28,6 +28,7 @@ fn render(
 ) -> (Buffer, Option<(u16, u16)>) {
     let options = composer.resolve_render_options(ComposerRenderOptions {
         footer,
+        separate_status_line: true,
         ..ComposerRenderOptions::default()
     });
     let width = 60;
@@ -75,6 +76,7 @@ fn retained_command_suggestions_yield_paint_and_cursor_to_find() {
     let options = composer.resolve_render_options(ComposerRenderOptions {
         footer: Some(&footer),
         command_popup_placement: CommandPopupPlacement::Hidden,
+        separate_status_line: true,
         ..ComposerRenderOptions::default()
     });
     let mut frames = Vec::new();
@@ -122,7 +124,10 @@ fn copying_from_find_preserves_the_query_above_selection_feedback() {
     );
     let (buffer, cursor) = render(&composer, Some(&footer));
     assert_eq!(cursor, None);
-    insta::assert_snapshot!("transcript_find_copy_footer", text(&buffer));
+    let output = text(&buffer);
+    assert!(output.contains("Find: needle"));
+    assert!(output.contains("Copied selection to clipboard"));
+    insta::assert_snapshot!("transcript_find_copy_footer", output);
 }
 
 #[test]
@@ -169,11 +174,7 @@ fn status_line_fields_stay_on_assigned_rows_at_every_width() {
             heights.push(height);
             let area = Rect::new(0, 0, width, height);
             let layout = composer.layout_with_options(area, options);
-            let status = if separate_status_line {
-                layout.status
-            } else {
-                layout.footer
-            };
+            let status = layout.status;
             assert_eq!(status.height, 2);
             let mut buffer = Buffer::empty(area);
             composer.render_with_options(area, &mut buffer, /*mask_char*/ None, options);
@@ -202,84 +203,56 @@ fn status_line_fields_stay_on_assigned_rows_at_every_width() {
 }
 
 #[test]
-fn warning_notice_only_limits_the_last_visible_status_row() {
+fn warning_notice_keeps_all_visible_status_rows_and_the_cursor_unchanged() {
     let mut composer = composer();
-    composer.set_collaboration_modes_enabled(/*enabled*/ true);
-    composer.set_collaboration_mode_indicator(Some(CollaborationModeIndicator::Plan));
     composer.footer.show_warnings_key = Some(crate::key_hint::plain(KeyCode::F(2)).into());
-    composer.set_status_line(Some(
-        Line::from(vec![
-            ratatui::text::Span::raw("MODEL-A · PROJECT-B · BRANCH-C · CONTEXT-D · REASONING-E"),
-            ratatui::text::Span::raw("\n"),
-            ratatui::text::Span::raw("MIDDLE-A · FIELD-B · FIELD-C · FIELD-D · FIELD-E · FIELD-F"),
-            ratatui::text::Span::raw("\n"),
-            ratatui::text::Span::raw(
-                "TOKENS-A · COST-B · INPUT-C · OUTPUT-D · LIMIT-E · SESSION-F",
-            ),
-        ])
-        .into(),
-    ));
-    let width = 80;
-    for height_limit in [None, Some(5), Some(4)] {
-        let options = ComposerRenderOptions::default();
-        let warning_options = ComposerRenderOptions {
-            warning_count: 1,
-            ..options
-        };
-        let desired_height = composer.desired_height_with_options(width, options);
-        assert_eq!(
-            composer.desired_height_with_options(width, warning_options),
-            desired_height
-        );
-        let area = Rect::new(3, 7, width, height_limit.unwrap_or(desired_height));
-        let layout = composer.layout_with_options(area, options);
-        let warning_layout = composer.layout_with_options(area, warning_options);
-        assert_eq!(warning_layout.footer, layout.footer);
-        assert_eq!(layout.footer.height, area.height - 3);
-        assert_eq!(
-            composer.cursor_pos_with_options(area, warning_options),
-            composer.cursor_pos_with_options(area, options)
-        );
-        assert!(composer.cursor_pos_with_options(area, options).is_some());
-        let mut baseline = Buffer::empty(area);
-        composer.render_with_options(area, &mut baseline, /*mask_char*/ None, options);
-        let mut warned = Buffer::empty(area);
-        composer.render_with_options(area, &mut warned, /*mask_char*/ None, warning_options);
-        let (warning_area, _) = composer
-            .warning_notice_layout(inset_footer_hint_area(layout.footer), warning_options)
-            .expect("the warning must fit");
-        assert_eq!(warning_area.y, layout.footer.bottom() - 1);
-        let row = |buffer: &Buffer, y| {
-            (area.x..area.right())
-                .map(|x| buffer[(x, y)].symbol())
-                .collect::<String>()
-        };
-        for y in layout.footer.y..warning_area.y {
-            assert_eq!(row(&warned, y), row(&baseline, y));
-        }
-        if layout.footer.height > 1 {
-            let first = row(&warned, layout.footer.y);
-            assert!(first.contains("REASONING-E"), "{first:?}");
-            assert!(first.contains("Plan mode"), "{first:?}");
+    composer.set_status_line(Some(Line::from("MODEL\nMIDDLE\nTOKENS").into()));
+    for separate_status_line in [false, true] {
+        for height_limit in [None, Some(5), Some(4)] {
+            let options = ComposerRenderOptions {
+                separate_status_line,
+                ..Default::default()
+            };
+            let warning_options = ComposerRenderOptions {
+                warning_count: 1,
+                ..options
+            };
+            let desired_height = composer.desired_height_with_options(80, options);
             assert_eq!(
-                first.find("Plan mode"),
-                row(&baseline, layout.footer.y).find("Plan mode")
+                composer.desired_height_with_options(80, warning_options),
+                desired_height
             );
+            let area = Rect::new(3, 7, 80, height_limit.unwrap_or(desired_height));
+            let layout = composer.layout_with_options(area, options);
+            let warning_layout = composer.layout_with_options(area, warning_options);
+            assert_eq!(warning_layout.status, layout.status);
+            assert_eq!(warning_layout.footer, layout.footer);
+            assert_eq!(
+                composer.cursor_pos_with_options(area, warning_options),
+                composer.cursor_pos_with_options(area, options)
+            );
+            assert!(composer.cursor_pos_with_options(area, options).is_some());
+            let mut baseline = Buffer::empty(area);
+            composer.render_with_options(area, &mut baseline, None, options);
+            let mut warned = Buffer::empty(area);
+            composer.render_with_options(area, &mut warned, None, warning_options);
+            for y in layout.status.y..layout.status.bottom() {
+                for x in area.x..area.right() {
+                    assert_eq!(warned[(x, y)], baseline[(x, y)]);
+                }
+            }
+            let warning_area = composer
+                .footer
+                .warning_notice_area
+                .get()
+                .expect("warning fits");
+            assert!(warning_area.y >= layout.status.bottom());
         }
-        let last = row(&warned, warning_area.y);
-        assert!(last.contains('⚠'), "{last:?}");
-        assert!(last.contains('…'), "{last:?}");
-        assert!(!row(&baseline, warning_area.y).contains('⚠'));
-        let status_end = warning_area.x.saturating_sub(2);
-        let visible_status = (layout.footer.x..status_end)
-            .map(|x| warned[(x, warning_area.y)].symbol())
-            .collect::<String>();
-        assert!(visible_status.contains('…'), "{visible_status:?}");
     }
 }
 
 #[test]
-fn status_line_keeps_empty_rows_and_right_indicator_on_first_row() {
+fn status_line_keeps_empty_rows_and_plan_indicator_in_the_hint_row() {
     let mut composer = composer();
     composer.set_collaboration_modes_enabled(/*enabled*/ true);
     composer.set_collaboration_mode_indicator(Some(CollaborationModeIndicator::Plan));
@@ -304,11 +277,7 @@ fn status_line_keeps_empty_rows_and_right_indicator_on_first_row() {
             composer.desired_height_with_options(width, options),
         );
         let layout = composer.layout_with_options(area, options);
-        let status = if separate_status_line {
-            layout.status
-        } else {
-            layout.footer
-        };
+        let status = layout.status;
         assert_eq!(status.height, 3);
         let mut buffer = Buffer::empty(area);
         composer.render_with_options(area, &mut buffer, /*mask_char*/ None, options);
@@ -317,7 +286,7 @@ fn status_line_keeps_empty_rows_and_right_indicator_on_first_row() {
                 .map(|x| buffer[(x, y)].symbol())
                 .collect::<String>()
         };
-        assert!(row(status.y).contains("Plan mode"));
+        assert!(row(layout.footer.y).contains("Plan mode"));
         assert!(row(status.y + 1).trim().is_empty());
         assert!(row(status.y + 2).contains("TOKENS"));
         assert!(!row(status.y + 2).contains("Plan mode"));
