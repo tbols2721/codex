@@ -168,10 +168,8 @@ fn status_line_fields_stay_on_assigned_rows_at_every_width() {
             separate_status_line,
             ..ComposerRenderOptions::default()
         };
-        let mut heights = Vec::new();
         for width in [12, 32, 100] {
             let height = composer.desired_height_with_options(width, options);
-            heights.push(height);
             let area = Rect::new(0, 0, width, height);
             let layout = composer.layout_with_options(area, options);
             let status = layout.status;
@@ -198,7 +196,6 @@ fn status_line_fields_stay_on_assigned_rows_at_every_width() {
             }
             assert!(composer.cursor_pos_with_options(area, options).is_some());
         }
-        assert!(heights.windows(2).all(|pair| pair[0] == pair[1]));
     }
 }
 

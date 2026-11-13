@@ -50,6 +50,7 @@ fn status_line_rows_keep_pr_links_after_empty_rows_and_resize() {
         extension_row(serde_json::json!("")),
         extension_row(serde_json::json!({
             "type": "row",
+            "props": {"gap": 0},
             "children": [
                 {"type": "link", "props": {"href": url}, "children": ["PR #42"]},
                 " · project"
