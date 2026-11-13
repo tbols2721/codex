@@ -3,7 +3,6 @@
 
 use super::ChatComposer;
 use super::FooterContent;
-use crate::terminal_hyperlinks::HyperlinkLine;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::Span;
@@ -12,7 +11,7 @@ use std::cell::Ref;
 pub(super) struct NativeStatusRows {
     width: u16,
     suffix: Vec<Span<'static>>,
-    rows: Vec<HyperlinkLine>,
+    rows: Vec<FooterContent>,
 }
 
 impl NativeStatusRows {
@@ -21,14 +20,7 @@ impl NativeStatusRows {
     }
 
     pub(super) fn render(&self, area: Rect, buf: &mut Buffer) {
-        for (index, line) in self.rows.iter().take(usize::from(area.height)).enumerate() {
-            let row = Rect::new(area.x, area.y + index as u16, area.width, 1);
-            if line.width() > usize::from(area.width) {
-                line.clone().render_with_ellipsis(row, buf);
-            } else {
-                line.render_fitted(row, buf);
-            }
-        }
+        FooterContent::Rows(self.rows.clone()).render(area, buf);
     }
 }
 
@@ -59,12 +51,7 @@ impl ChatComposer {
             cache.replace(Some(NativeStatusRows {
                 width,
                 suffix: suffix.to_vec(),
-                rows: content
-                    .clone()
-                    .into_rows()
-                    .into_iter()
-                    .map(FooterContent::into_hyperlink_line)
-                    .collect(),
+                rows: content.clone().into_rows(),
             }));
         }
         Ref::filter_map(cache.borrow(), Option::as_ref).ok()

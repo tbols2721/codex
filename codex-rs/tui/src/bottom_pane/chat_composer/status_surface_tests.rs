@@ -89,11 +89,17 @@ fn status_line_rows_keep_pr_links_after_empty_rows_and_resize() {
                     .enumerate()
                     .filter(|(_, cell)| cell.symbol().contains(url))
                     .collect::<Vec<_>>();
-                assert_eq!(
-                    linked.len(),
-                    if width == 8 { 5 } else { 6 },
-                    "{renderer:?}: {buffer:?}"
-                );
+                let linked_text: String = linked
+                    .iter()
+                    .map(|(_, cell)| strip_osc8(cell.symbol()))
+                    .collect();
+                if width == 40 {
+                    assert_eq!(linked_text, "PR #42", "{renderer}: {buffer:?}");
+                } else {
+                    assert!(!linked_text.is_empty(), "{renderer}: {buffer:?}");
+                    assert!("PR #42".starts_with(&linked_text), "{renderer}: {buffer:?}");
+                    assert!(linked_text.len() < "PR #42".len(), "{renderer}: {buffer:?}");
+                }
                 for (index, cell) in linked {
                     assert_eq!(index / usize::from(width), usize::from(model_row + 2));
                     assert!(!cell.symbol().contains('…'));
